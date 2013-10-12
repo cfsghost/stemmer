@@ -1,0 +1,13 @@
+#GPIO
+gpio_sunxi
+
+#For SATA Support
+sw_ahci_platform
+
+#Display and GPU
+lcd
+hdmi
+ump
+disp
+mali
+mali_drm
