@@ -1,0 +1,10 @@
+{
+	"name": "base",
+	"description": "Base system",
+	"arch": "cubieboard",
+	"network": {
+		"eth0": {
+			"method": "dhcp"
+		}
+	}
+}

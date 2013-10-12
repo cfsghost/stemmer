@@ -1,0 +1,27 @@
+{
+	"name": "nas",
+	"description": "Base system",
+	"arch": "cubieboard",
+	"settings": {
+		"hostname": "Stem NAS"
+	},
+	"network": {
+		"eth0": {
+			"method": "dhcp"
+		}
+	},
+	"packages": {
+		"xserver-xorg": "*",
+		"xserver-xorg-input-all": "*",
+		"xserver-xorg-video-fbdev": "*",
+		"xserver-xorg-core": "*",
+		"xinit": "*",
+		"xterm": "*",
+		"libglib2.0-0": "*",
+		"libgtk2.0-0": "*",
+		"libnss3": "*",
+		"libasound2": "*",
+		"libgconf-2-4": "*",
+		"samba": "*"
+	}
+}

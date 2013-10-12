@@ -1,0 +1,7 @@
+#!/bin/bash
+
+if [ -z $1 ]; then
+	echo "usage: mkrootfs [Project Name]"
+	exit
+fi
+
