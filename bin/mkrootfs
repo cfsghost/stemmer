@@ -11,13 +11,14 @@ var async = require('async');
 var Arch = require('./lib/arch');
 var Job = require('./lib/job');
 var Strap = require('./lib/strap');
-var RootfsActivator = require('./lib/activator');
+var RootfsActivator = require('./lib/rootfs_activator');
 
 
 var strap = new Strap();
 
 var configPath = null;
 var archRootfs = null;
+var job = null;
 async.series([
 
 	function(next) {
@@ -33,7 +34,7 @@ async.series([
 	function(next) {
 
 		// Create a job
-		var job = new Job();
+		job = new Job();
 		job.create(function() {
 			next();
 		});
@@ -52,7 +53,7 @@ async.series([
 		var targetPath = path.join(job.jobPath, 'rootfs');
 		var envConfigPath = path.join(job.jobPath, 'fakeroot.env');
 
-		strap.build(configPath, targetPath, envConfigPath, function(err, rootfs) {
+		strap.build(configPath, envConfigPath, targetPath, function(err, rootfs) {
 			archRootfs = rootfs;
 
 			next();
@@ -61,7 +62,7 @@ async.series([
 	function(next) {
 
 		// Activate rootfs
-		var activator = new RootActivator(archRootfs);
+		var activator = new RootfsActivator(archRootfs);
 		activator.configurePackages = true;
 		activator.updateClock = true;
 		activator.resetRootPassword = true;

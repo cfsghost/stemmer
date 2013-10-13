@@ -6,7 +6,7 @@ var fs = require('fs');
 var path = require('path');
 var child_process = require('child_process');
 
-var Rootfs = require('rootfs');
+var Rootfs = require('./rootfs');
 
 var Strap = module.exports = function() {
 	var self = this;
@@ -22,7 +22,7 @@ Strap.prototype.generateBuildConfig = function(outputFile, callback) {
 	// Initializing configuration of repository
 	var multistrapConfig = [];
 	for (var repoName in self.settings) {
-		var repo = self.settings.repo[repoName];
+		var repo = self.settings[repoName];
 
 		multistrapConfig.push('[' + repoName + ']');
 

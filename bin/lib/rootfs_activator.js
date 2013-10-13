@@ -12,7 +12,7 @@ var RootfsActivator = module.exports = function(rootfs) {
 
 	self.rootfs = rootfs;
 	self.scriptPath = path.join(self.rootfs.targetPath, 'activate.sh');
-	self.scriptContent = [];
+	self.scriptContent = [ '#!/bin/sh' ];
 
 	// Settings
 	self.configurePackages = false;
@@ -29,11 +29,11 @@ RootfsActivator.prototype.setPackageConfiguration = function(callback) {
 	self.scriptContent.push('export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true');
 	self.scriptContent.push('/var/lib/dpkg/info/dash.preinst install');
 	self.scriptContent.push('mount proc -t proc /proc');
-	self.scriptContent.push('dpkg --self.scriptContent.re -a');
+	self.scriptContent.push('dpkg --configure -a');
 	self.scriptContent.push('umount /proc');
 
 	process.nextTick(callback);
-});
+};
 
 RootfsActivator.prototype.setClockUpdater = function(callback) {
 	var self = this;
@@ -106,24 +106,54 @@ RootfsActivator.prototype.activate = function(callback) {
 
 			// Create script for activating
 			fs.writeFile(self.scriptPath, self.scriptContent.join('\n'), function(err) {
-				next();
+
+				fs.chmod(self.scriptPath, '755', function() {
+					next();
+				});
 			});
 		},
 		function(next) {
 
 			// Starting to activate
-			var cmd = child_process.spawn('fakechroot', [
-				'fakeroot'
+/*
+			var cmd = child_process.spawn('fakeroot', [
+				'-s',
+				self.rootfs.envConfigPath,
 				'-i',
 				self.rootfs.envConfigPath,
+				'--',
+				'fakechroot',
+				'--',
 				'chroot', 
 				self.rootfs.targetPath,
 				'/activate.sh'
 			]);
+*/
+			var opts = {};
+			if (self.rootfs.arch == 'armhf') {
+				var ldLibraryPath = [
+					path.join(self.rootfs.targetPath, 'usr', 'lib', 'arm-linux-gnueabihf', 'libfakeroot'),
+					path.join(self.rootfs.targetPath, 'usr', 'lib', 'arm-linux-gnueabihf', 'fakeroot'),
+					path.join(self.rootfs.targetPath, 'lib', 'arm-linux-gnueabihf')
+				];
 
+				opts.env = {
+					LD_LIBRARY_PATH: ldLibraryPath.join(':'),
+				};
+console.log(ldLibraryPath.join(':'));
+			}
+			
+			var cmd = child_process.spawn('fakeroot', [
+				'fakechroot',
+				path.join('/', 'usr', 'sbin', 'chroot'),
+				self.rootfs.targetPath,
+				path.join('/', 'activate.sh')
+			], opts);
 
-			cmd.stdout.pipe(process.stdout, end: false);
-			cmd.stderr.pipe(process.stderr, end: false);
+//LD_LIBRARY_PATH=$PWD/usr/lib/arm-linux-gnueabihf/fakechroot:$PWD/usr/lib/arm-linux-gnueabihf/libfakeroot fakeroot fakechroot /usr/sbin/chroot . /usr/bin/qemu-arm-static -L . usr/bin/dpkg --configure -a
+
+			cmd.stdout.pipe(process.stdout);
+			cmd.stderr.pipe(process.stderr);
 
 			cmd.on('close', function() {
 
@@ -131,15 +161,16 @@ RootfsActivator.prototype.activate = function(callback) {
 			});
 		},
 		function(next) {
-
+next();
 			// Clear files which are used to activate rootfs
+			/*
 			fs.unlink(self.scriptPath, function() {
 				fs.unlink(path.join(self.rootfs.targetPath, 'usr', 'bin', 'qemu-arm-static'), function() {
 
 					next();
 				});
 			});
-
+*/
 		}
 	], function() {
 

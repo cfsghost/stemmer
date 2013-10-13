@@ -1,7 +1,7 @@
 {
 	"repo": {
 		"General": {
-			"arch": "armhf",
+			"arch": "i386",
 			"cleanup": true,
 			"noauth": true,
 			"unpack": true,
