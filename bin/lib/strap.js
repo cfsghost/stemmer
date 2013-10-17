@@ -47,6 +47,7 @@ Strap.prototype.build = function(configPath, envConfigPath, targetPath, callback
 	var self = this;
 
 	// Generate a rootfs by downloading packages from internet
+/*
 	var ms = child_process.spawn('fakeroot', [
 		'-s',
 		envConfigPath,
@@ -57,6 +58,14 @@ Strap.prototype.build = function(configPath, envConfigPath, targetPath, callback
 		'-d',
 		targetPath
 	]);
+*/
+	var ms = child_process.spawn('/usr/sbin/multistrap', [
+		'-f',
+		configPath,
+		'-d',
+		targetPath
+	]);
+
 
 	ms.stdout.on('data', function(data) {
 		process.stdout.write(data.toString());

@@ -35,14 +35,6 @@ RootfsActivator.prototype.setPackageConfiguration = function(callback) {
 	process.nextTick(callback);
 };
 
-RootfsActivator.prototype.setClockUpdater = function(callback) {
-	var self = this;
-
-	self.scriptContent.push('ntpdate time.stdtime.gov.tw');
-
-	process.nextTick(callback);
-};
-
 RootfsActivator.prototype.setRootPasswordCleaner = function(callback) {
 	var self = this;
 
@@ -56,22 +48,38 @@ RootfsActivator.prototype.activate = function(callback) {
 
 	async.series([
 		function(next) {
+
+			// Initializing domain name server settings
+			var cmd = child_process.spawn('cp', [
+				'-a',
+				path.join('/', 'etc', 'resolv.conf'),
+				path.join(self.rootfs.targetPath, 'etc')
+			]);
+
+			cmd.on('close', function() {
+				next();
+			});
+		},
+		function(next) {
+
+			// Initializing time settings
+			var cmd = child_process.spawn('cp', [
+				'-a',
+				path.join('/', 'etc', 'localtime'),
+				path.join(self.rootfs.targetPath, 'etc')
+			]);
+
+			cmd.on('close', function() {
+				next();
+			});
+		},
+		function(next) {
 			if (!self.configurePackages) {
 				next();
 				return;
 			}
 
 			self.setPackageConfiguration(function() {
-				next();
-			});
-		},
-		function(next) {
-			if (!self.updateClock) {
-				next();
-				return;
-			}
-
-			self.setClockUpdater(function() {
 				next();
 			});
 		},
@@ -115,42 +123,10 @@ RootfsActivator.prototype.activate = function(callback) {
 		function(next) {
 
 			// Starting to activate
-/*
-			var cmd = child_process.spawn('fakeroot', [
-				'-s',
-				self.rootfs.envConfigPath,
-				'-i',
-				self.rootfs.envConfigPath,
-				'--',
-				'fakechroot',
-				'--',
-				'chroot', 
-				self.rootfs.targetPath,
-				'/activate.sh'
-			]);
-*/
-			var opts = {};
-			if (self.rootfs.arch == 'armhf') {
-				var ldLibraryPath = [
-					path.join(self.rootfs.targetPath, 'usr', 'lib', 'arm-linux-gnueabihf', 'libfakeroot'),
-					path.join(self.rootfs.targetPath, 'usr', 'lib', 'arm-linux-gnueabihf', 'fakeroot'),
-					path.join(self.rootfs.targetPath, 'lib', 'arm-linux-gnueabihf')
-				];
-
-				opts.env = {
-					LD_LIBRARY_PATH: ldLibraryPath.join(':'),
-				};
-console.log(ldLibraryPath.join(':'));
-			}
-			
-			var cmd = child_process.spawn('fakeroot', [
-				'fakechroot',
-				path.join('/', 'usr', 'sbin', 'chroot'),
+			var cmd = child_process.spawn('chroot', [
 				self.rootfs.targetPath,
 				path.join('/', 'activate.sh')
-			], opts);
-
-//LD_LIBRARY_PATH=$PWD/usr/lib/arm-linux-gnueabihf/fakechroot:$PWD/usr/lib/arm-linux-gnueabihf/libfakeroot fakeroot fakechroot /usr/sbin/chroot . /usr/bin/qemu-arm-static -L . usr/bin/dpkg --configure -a
+			]);
 
 			cmd.stdout.pipe(process.stdout);
 			cmd.stderr.pipe(process.stderr);
@@ -161,16 +137,19 @@ console.log(ldLibraryPath.join(':'));
 			});
 		},
 		function(next) {
-next();
-			// Clear files which are used to activate rootfs
-			/*
-			fs.unlink(self.scriptPath, function() {
-				fs.unlink(path.join(self.rootfs.targetPath, 'usr', 'bin', 'qemu-arm-static'), function() {
 
-					next();
-				});
-			});
-*/
+			// Clear files which are used to activate rootfs
+			async.series([
+				function(_next) {
+					fs.unlink(self.scriptPath, _next);
+				},
+				function(_next) {
+					fs.unlink(path.join(self.rootfs.targetPath, 'usr', 'bin', 'qemu-arm-static'), _next);
+				},
+				function(_next) {
+					fs.unlink(path.join(self.rootfs.targetPath, 'etc', 'resolv.conf'), _next);
+				}
+			], next);
 		}
 	], function() {
 

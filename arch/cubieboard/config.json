@@ -10,8 +10,6 @@
 		},
 		"Grip": {
 			"packages": [
-				"fakeroot",
-				"fakechroot",
 				"ntpdate",
 				"net-tools",
 				"isc-dhcp-client",

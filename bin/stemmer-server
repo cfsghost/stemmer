@@ -8,6 +8,7 @@ if (process.getuid() != 0) {
 }
 
 var unixServer = net.createServer(function(client) {
+	
 });
 
 unixServer.listen('/var/run/stemmer');
