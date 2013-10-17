@@ -64,7 +64,6 @@ async.series([
 		// Activate rootfs
 		var activator = new RootfsActivator(archRootfs);
 		activator.configurePackages = true;
-		activator.updateClock = true;
 		activator.resetRootPassword = true;
 		activator.activate(function() {
 			next();
