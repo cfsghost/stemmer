@@ -54,7 +54,6 @@ Strap.prototype.build = function(configPath, targetPath, callback) {
 		targetPath
 	]);
 
-
 	ms.stdout.on('data', function(data) {
 		process.stdout.write(data.toString());
 	});
