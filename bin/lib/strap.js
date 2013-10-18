@@ -43,22 +43,10 @@ Strap.prototype.generateBuildConfig = function(outputFile, callback) {
 	});
 };
 
-Strap.prototype.build = function(configPath, envConfigPath, targetPath, callback) {
+Strap.prototype.build = function(configPath, targetPath, callback) {
 	var self = this;
 
 	// Generate a rootfs by downloading packages from internet
-/*
-	var ms = child_process.spawn('fakeroot', [
-		'-s',
-		envConfigPath,
-		'--',
-		'/usr/sbin/multistrap',
-		'-f',
-		configPath,
-		'-d',
-		targetPath
-	]);
-*/
 	var ms = child_process.spawn('/usr/sbin/multistrap', [
 		'-f',
 		configPath,
@@ -79,7 +67,6 @@ Strap.prototype.build = function(configPath, envConfigPath, targetPath, callback
 		var rootfs = new Rootfs();
 		rootfs.arch = self.settings.General.arch;
 		rootfs.targetPath = targetPath;
-		rootfs.envConfigPath = envConfigPath;
 
 		callback(null, rootfs);
 	});

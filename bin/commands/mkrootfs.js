@@ -16,6 +16,7 @@ var RootfsActivator = require('../lib/rootfs_activator');
 
 var strap = new Strap();
 
+var arch = null;
 var configPath = null;
 var archRootfs = null;
 var job = null;
@@ -24,7 +25,7 @@ async.series([
 	function(next) {
 
 		// Initializing architecture settings
-		var arch = new Arch();
+		arch = new Arch();
 		arch.arch = 'cubieboard';
 		arch.init(function() {
 			strap.settings = arch.settings.repo;
@@ -51,9 +52,8 @@ async.series([
 
 		// Starting to make a rootfs
 		var targetPath = path.join(job.jobPath, 'rootfs');
-		var envConfigPath = path.join(job.jobPath, 'fakeroot.env');
 
-		strap.build(configPath, envConfigPath, targetPath, function(err, rootfs) {
+		strap.build(configPath, targetPath, function(err, rootfs) {
 			archRootfs = rootfs;
 
 			next();
@@ -68,6 +68,10 @@ async.series([
 		activator.activate(function() {
 			next();
 		});
+	},
+	function(next) {
+		// Initializing rootfs for specific platform
+		arch.initRootfs(archRootfs, next);
 	}
 ], function() {
 	console.log('Done');
