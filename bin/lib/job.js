@@ -8,7 +8,7 @@ var Job = module.exports = function(id) {
 	var self = this;
 
 	self.id = id || uuid.v1();
-	self.basePath = path.join(__dirname, '..', '..', 'build');
+	self.basePath = path.join(__dirname, '..', '..', 'job');
 	self.jobPath = null;
 };
 
