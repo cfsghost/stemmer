@@ -8,7 +8,7 @@ if (process.argv.length < 2) {
 var Arch = require('../lib/arch');
 
 var arch = new Arch();
-arch.arch = 'armhf';
+arch.platform = 'cubieboard';
 arch.init(function(err) {
 	if (err) {
 		console.log(err);

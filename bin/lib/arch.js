@@ -162,8 +162,14 @@ Arch.prototype.makeRootfs = function(callback) {
 				// Based on referenced platform
 				self.refPlatform.getRootfs({ makeIfDoesNotExists: true }, function(refRootfs) {
 
-					refRootfs.clone(targetPath, function(rootfs) {
-						archRoot = root;
+					// Clone
+					refRootfs.clone(targetPath, function(err, rootfs) {
+						if (err) {
+							next(err);
+							return;
+						}
+
+						archRootfs = rootfs;
 						activateRootfs = false;
 						next();
 					});
@@ -172,12 +178,12 @@ Arch.prototype.makeRootfs = function(callback) {
 			}
 
 			if (!self.settings.repo) {
-				next(false);
+				next(new Error('Requires repository in config file.'));
 				return;
 			}
 
 			if (!self.settings.repo.General) {
-				next(false);
+				next(new Error('Requires repository in config file.'));
 				return;
 			}
 
@@ -186,7 +192,7 @@ Arch.prototype.makeRootfs = function(callback) {
 
 			var strap = new Strap();
 			strap.settings = self.settings.repo;
-			strap.settings.repo.General.arch = self.arch;
+			strap.settings.General.arch = self.arch;
 			strap.generateBuildConfig(configPath, function() {
 
 				// Starting to make a rootfs

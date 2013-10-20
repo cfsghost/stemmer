@@ -8,6 +8,7 @@ var async = require('async');
 var Rootfs = module.exports = function() {
 	var self = this;
 
+	self.arch = null;
 	self.targetPath = null;
 	self.environmentReady = false;
 };
@@ -15,41 +16,76 @@ var Rootfs = module.exports = function() {
 Rootfs.prototype.clone = function(targetPath, callback) {
 	var self = this;
 
-	fs.exists(targetPath, function(exists) {
-		if (!exists) {
-			callback(new Error('No such rootfs.'));
-			return;
-		}
+	var rootfs = null;
+	async.series([
+		function(next) {
 
-		fs.readdir(self.targetPath, function(err, files) {
+			fs.exists(self.targetPath, function(exists) {
+				if (!exists) {
+					next(new Error('No such rootfs.'));
+					return;
+				}
 
-			if (files.length == 0) {
-				callback();
-				return;
-			}
-
-			// Preparing entries
-			var sources = [];
-			for (var index in files) {
-				sources.push(path.join(self.targetPath, files[index]));
-			}
-
-			// Arguments
-			var args = [ '-a' ].concat(sources, [ targetPath ]);
-
-			// Copying files
-			var cmd = child_process.spawn('cp', args);
-			cmd.on('close', function() {
-				callback();
+				next();
 			});
-		});
+		},
+		function(next) {
+
+			fs.exists(targetPath, function(exists) {
+				if (!exists) {
+					fs.mkdir(targetPath, function(err) {
+						next(err);
+					});
+					return;
+				}
+
+				next();
+			});
+		},
+		function(next) {
+
+			fs.readdir(self.targetPath, function(err, files) {
+				if (err) {
+					next(err);
+					return;
+				}
+
+				if (files.length == 0) {
+					next(new Error('No such rootfs.'));
+					return;
+				}
+
+				// Preparing entries
+				var sources = [];
+				for (var index in files) {
+					sources.push(path.join(self.targetPath, files[index]));
+				}
+
+				// Arguments
+				var args = [ '-a' ].concat(sources, [ targetPath ]);
+
+				// Copying files
+				var cmd = child_process.spawn('cp', args);
+				cmd.on('close', function() {
+
+					// Creatinga  new rootfs object
+					rootfs = new Rootfs();
+					rootfs.arch = self.arch;
+					rootfs.targetPath = targetPath;
+
+					next();
+				});
+			});
+		}
+	], function(err) {
+		callback(err, rootfs);
 	});
 };
 
 Rootfs.prototype.move = function(targetPath, callback) {
 	var self = this;
 
-	fs.exists(targetPath, function(exists) {
+	fs.exists(self.targetPath, function(exists) {
 		if (!exists) {
 			callback(new Error('No such rootfs.'));
 			return;
