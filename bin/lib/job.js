@@ -3,6 +3,7 @@
 var fs = require('fs');
 var path = require('path');
 var uuid = require('node-uuid');
+var child_process = require('child_process');
 
 var Job = module.exports = function(id) {
 	var self = this;
@@ -24,10 +25,17 @@ Job.prototype.create = function(callback) {
 Job.prototype.release = function(callback) {
 	var self = this;
 
-	if (!self.jobPath) {
+	if (!self.jobPath || self.jobPath == '/') {
 		process.nextTick(callback);
 		return;
 	}
 
-	// TODO: Remove directory
+	var cmd = child_process.spawn('rm', [
+		'-fr',
+		self.jobPath
+	]);
+
+	cmd.on('close', function() {
+		callback();
+	});
 };
