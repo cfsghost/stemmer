@@ -101,7 +101,7 @@ Arch.prototype.getPackages = function(callback) {
 Arch.prototype.buildExists = function(callback) {
 	var self = this;
 
-	fs.exists(path.join(__dirname, '..', '..', 'arch-build', self.platform || self.arch), function(exists) {
+	fs.exists(path.join(__dirname, '..', '..', 'platform-build', self.platform || self.arch), function(exists) {
 		callback(exists);
 	});
 };
@@ -109,7 +109,7 @@ Arch.prototype.buildExists = function(callback) {
 Arch.prototype.getRootfs = function(opts, callback) {
 	var self = this;
 
-	var archBuildPath = path.join(__dirname, '..', '..', 'arch-build', self.platform || self.arch, 'rootfs');
+	var archBuildPath = path.join(__dirname, '..', '..', 'platform-build', self.platform || self.arch, 'rootfs');
 
 	self.buildExists(function(exists) {
 
@@ -138,7 +138,7 @@ Arch.prototype.getRootfs = function(opts, callback) {
 Arch.prototype.makeRootfs = function(callback) {
 	var self = this;
 
-	var archBuildPath = path.join(__dirname, '..', '..', 'arch-build', self.platform || self.arch, 'rootfs');
+	var archBuildPath = path.join(__dirname, '..', '..', 'platform-build', self.platform || self.arch, 'rootfs');
 	var job = null;
 	var archRootfs = null;
 	var activateRootfs = true;
@@ -288,6 +288,7 @@ Arch.prototype.initRootfs = function(rootfs, callback) {
 				rootfsExecuter.addCommand('apt-get update');
 				rootfsExecuter.addCommand('apt-get install --no-install-recommends -q --force-yes -y ' + packages.join(' '))
 				rootfsExecuter.addCommand('apt-get clean');
+				rootfsExecuter.addCommand('rm -fr /var/lib/apt/lists/*');
 				rootfsExecuter.run({}, function() {
 					next();
 				});
