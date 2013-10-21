@@ -5,6 +5,8 @@ var path = require('path');
 var child_process = require('child_process');
 var async = require('async');
 
+var RootfsExecuter = require('./rootfs_executer');
+
 var Rootfs = module.exports = function() {
 	var self = this;
 
@@ -205,8 +207,24 @@ Rootfs.prototype.clearEnvironment = function(callback) {
 	});
 };
 
-Rootfs.prototype.installPackage = function(packages, opts, callback) {
+Rootfs.prototype.installPackages = function(packages, opts, callback) {
 	var self = this;
 
-	
+	if (packages.length == 0) {
+		process.nextTick(function() {
+			callback(null);
+		});
+		return;
+	}
+
+	var rootfsExecuter = new RootfsExecuter(self);
+
+	rootfsExecuter.addCommand('apt-get update');
+	rootfsExecuter.addCommand('apt-get install --no-install-recommends -q --force-yes -y ' + packages.join(' '))
+	rootfsExecuter.addCommand('apt-get clean');
+	rootfsExecuter.addCommand('rm -fr /var/lib/apt/lists/*');
+	rootfsExecuter.run({}, function() {
+		callback(null);
+	});
+
 };

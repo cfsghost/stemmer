@@ -1,6 +1,6 @@
 "use strict";
 
-if (process.argv.length < 2) {
+if (process.argv.length < 3) {
 	console.log('usage: mkrootfs [Project Name]');
 	process.exit();
 }
@@ -8,7 +8,7 @@ if (process.argv.length < 2) {
 var Arch = require('../lib/arch');
 
 var arch = new Arch();
-arch.platform = 'cubieboard';
+arch.platform = process.argv[2];
 arch.init(function(err) {
 	if (err) {
 		console.log(err);

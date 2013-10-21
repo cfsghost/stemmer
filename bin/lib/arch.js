@@ -9,7 +9,6 @@ var Job = require('../lib/job');
 var Strap = require('../lib/strap');
 var Rootfs = require('./rootfs');
 var RootfsActivator = require('../lib/rootfs_activator');
-var RootfsExecuter = require('./rootfs_executer');
 
 var Arch = module.exports = function() {
 	var self = this;
@@ -270,7 +269,6 @@ Arch.prototype.makeRootfs = function(callback) {
 Arch.prototype.initRootfs = function(rootfs, callback) {
 	var self = this;
 
-	var rootfsExecuter = new RootfsExecuter(rootfs);
 	async.series([
 		function(next) {
 
@@ -285,11 +283,7 @@ Arch.prototype.initRootfs = function(rootfs, callback) {
 					return;
 				}
 
-				rootfsExecuter.addCommand('apt-get update');
-				rootfsExecuter.addCommand('apt-get install --no-install-recommends -q --force-yes -y ' + packages.join(' '))
-				rootfsExecuter.addCommand('apt-get clean');
-				rootfsExecuter.addCommand('rm -fr /var/lib/apt/lists/*');
-				rootfsExecuter.run({}, function() {
+				rootfs.installPacakges(packages, {}, function() {
 					next();
 				});
 			});

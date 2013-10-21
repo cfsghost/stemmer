@@ -2,4 +2,4 @@
 
 __DIRNAME="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-node "$__DIRNAME/commands/mkrootfs.js" $1
+node "$__DIRNAME/commands/build.js" $1
