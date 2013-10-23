@@ -220,9 +220,9 @@ Rootfs.prototype.installPackages = function(packages, opts, callback) {
 	var rootfsExecuter = new RootfsExecuter(self);
 
 	rootfsExecuter.addCommand('apt-get update');
-	rootfsExecuter.addCommand('apt-get install --no-install-recommends -q --force-yes -y ' + packages.join(' '))
-	rootfsExecuter.addCommand('apt-get clean');
+	rootfsExecuter.addCommand('apt-get install -f --no-install-recommends -q --force-yes -y ' + packages.join(' '))
 	rootfsExecuter.addCommand('rm -fr /var/lib/apt/lists/*');
+	rootfsExecuter.addCommand('apt-get clean');
 	rootfsExecuter.run({}, function() {
 		callback(null);
 	});

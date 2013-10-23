@@ -120,7 +120,7 @@ Arch.prototype.getRootfs = function(opts, callback) {
 			rootfs.arch = self.arch;
 			rootfs.targetPath = archBuildPath;
 
-			callback(rootfs);
+			callback(null, rootfs);
 
 			return;
 		}
@@ -129,7 +129,7 @@ Arch.prototype.getRootfs = function(opts, callback) {
 			// Build rootfs
 			self.makeRootfs(callback);
 		} else {
-			callback(null);
+			callback(null, null);
 		}
 	});
 };
@@ -159,7 +159,7 @@ Arch.prototype.makeRootfs = function(callback) {
 			if (self.refPlatform) {
 
 				// Based on referenced platform
-				self.refPlatform.getRootfs({ makeIfDoesNotExists: true }, function(refRootfs) {
+				self.refPlatform.getRootfs({ makeIfDoesNotExists: true }, function(err, refRootfs) {
 
 					// Clone
 					refRootfs.clone(targetPath, function(err, rootfs) {
@@ -227,7 +227,7 @@ Arch.prototype.makeRootfs = function(callback) {
 		function(next) {
 
 			// Remove old rootfs if it exists
-			self.getRootfs({}, function(rootfs) {
+			self.getRootfs({}, function(err, rootfs) {
 
 				if (rootfs) {
 
@@ -259,9 +259,9 @@ Arch.prototype.makeRootfs = function(callback) {
 
 		}
 		
-	], function() {
+	], function(err) {
 		job.release(function() {
-			callback(archRootfs || null);
+			callback(err, archRootfs || null);
 		});
 	});
 };
@@ -283,7 +283,7 @@ Arch.prototype.initRootfs = function(rootfs, callback) {
 					return;
 				}
 
-				rootfs.installPacakges(packages, {}, function() {
+				rootfs.installPackages(packages, {}, function() {
 					next();
 				});
 			});

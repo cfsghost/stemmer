@@ -3,7 +3,7 @@
 	"description": "Base system",
 	"platform": "cubieboard",
 	"settings": {
-		"hostname": "Stem NAS"
+		"hostname": "StemNAS"
 	},
 	"network": {
 		"eth0": {

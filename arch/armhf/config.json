@@ -17,6 +17,7 @@
 		"Debian": {
 			"source": "http://ftp.us.debian.org/debian",
 			"keyring": "debian-archive-keyring",
+			"components": "main contrib non-free",
 			"suite": "sid"
 		}
 	}

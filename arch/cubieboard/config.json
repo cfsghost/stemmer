@@ -18,7 +18,8 @@
 				"parted",
 				"policykit-1",
 				"dbus",
-				"udisks2"
+				"udisks2",
+				"connman"
 			],
 			"source": "http://www.emdebian.org/grip",
 			"keyring": "emdebian-archive-keyring",

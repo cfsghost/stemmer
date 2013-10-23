@@ -2,8 +2,11 @@
 
 var fs = require('fs');
 var path = require('path');
+var child_process = require('child_process');
 var async = require('async');
 var Job = require('./job');
+var Arch = require('./arch');
+var Rootfs = require('./rootfs');
 
 var Project = module.exports = function() {
 	var self = this;
@@ -59,7 +62,44 @@ Project.prototype.load = function(projectName, callback) {
 			return;
 		}
 
-		callback(null);
+		callback(new Error('Require platform'));
+	});
+};
+
+Project.prototype.buildExists = function(callback) {
+	var self = this;
+
+	fs.exists(path.join(__dirname, '..', '..', 'build', self.projectName), function(exists) {
+		callback(exists);
+	});
+};
+
+Project.prototype.getRootfs = function(opts, callback) {
+	var self = this;
+
+	var buildPath = path.join(__dirname, '..', '..', 'build', self.projectName, 'rootfs');
+
+	self.buildExists(function(exists) {
+
+		// Trying to rebuild this rootfs
+		if (exists) {
+
+			// Creating rootfs object
+			var rootfs = new Rootfs();
+			rootfs.arch = self.arch;
+			rootfs.targetPath = buildPath;
+
+			callback(null, rootfs);
+
+			return;
+		}
+
+		if (opts.makeIfDoesNotExists) {
+			// Build rootfs
+			self.build(callback);
+		} else {
+			callback(null, null);
+		}
 	});
 };
 
@@ -68,6 +108,7 @@ Project.prototype.build = function(opts, callback) {
 
 	var job = null;
 	var curRootfs = null;
+	var buildPath = path.join(__dirname, '..', '..', 'build', self.projectName, 'rootfs');
 	async.series([
 		function(next) {
 
@@ -85,7 +126,7 @@ Project.prototype.build = function(opts, callback) {
 			if (self.refPlatform) {
 
 				// Based on referenced platform
-				self.refPlatform.getRootfs({ makeIfDoesNotExists: true }, function(refRootfs) {
+				self.refPlatform.getRootfs({ makeIfDoesNotExists: true }, function(err, refRootfs) {
 
 					// Clone
 					refRootfs.clone(targetPath, function(err, rootfs) {
@@ -116,6 +157,10 @@ Project.prototype.build = function(opts, callback) {
 		},
 		function(next) {
 
+			curRootfs.prepareEnvironment(next);
+		},
+		function(next) {
+
 			if (!self.settings.packages) {
 				next();
 				return;
@@ -127,9 +172,47 @@ Project.prototype.build = function(opts, callback) {
 				packages.push(packageName);
 			}
 
-			curRootfs.installPackage(packages, {}, function() {
+			curRootfs.installPackages(packages, {}, function() {
 				next();
 			});
+		},
+		function(next) {
+
+			curRootfs.clearEnvironment(next);
+		},
+		function(next) {
+
+			// Remove old rootfs if it exists
+			self.getRootfs({}, function(err, rootfs) {
+
+				if (rootfs) {
+
+					// Remove
+					rootfs.remove(function() {
+
+						next();
+					});
+
+					return;
+				}
+
+				next();
+			});
+		},
+		function(next) {
+
+			// Create a new directory for rootfs
+			var cmd = child_process.spawn('mkdir', [
+				'-p',
+				buildPath
+			]);
+
+			cmd.on('close', function() {
+
+				// Moving rootfs to another place for storing
+				curRootfs.move(buildPath, next);
+			});
+
 		}
 	], function(err) {
 
