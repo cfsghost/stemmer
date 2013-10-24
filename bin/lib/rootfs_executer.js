@@ -12,6 +12,7 @@ var RootfsExecuter = module.exports = function(rootfs) {
 	self.commands = [];
 	self.preloads = [
 		'#!/bin/sh',
+		'export PATH=/.stemmer:$PATH',
 		'export LC_ALL=C LANGUAGE=C LANG=C',
 		'export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true',
 		'/var/lib/dpkg/info/dash.preinst install',

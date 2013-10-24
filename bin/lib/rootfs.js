@@ -176,6 +176,38 @@ Rootfs.prototype.prepareEnvironment = function(callback) {
 			cmd.on('close', function() {
 				next();
 			});
+		},
+		function(next) {
+
+			// Initializing a fake environment to avoid invoke-rc.d running
+			var fakeLinks = [
+				'initctl',
+				'invoke-rc.d',
+				'restart',
+				'start',
+				'stop',
+				'start-stop-daemon',
+				'service'
+			];
+
+			var stemmerPath = path.join(self.targetPath, '.stemmer');
+			fs.mkdir(stemmerPath, function(err) {
+				if (err) {
+					next(err);
+					return;
+				}
+
+				async.each(fakeLinks, function(linkname, cb) {
+					fs.symlink('/bin/true', path.join(stemmerPath, linkname), function(err) {
+						cb(err);
+					});
+				}, function(err) {
+
+					next();
+				});
+
+			});
+			
 		}
 	], function() {
 		self.environmentReady = true;
@@ -193,6 +225,17 @@ Rootfs.prototype.clearEnvironment = function(callback) {
 
 	async.series([
 
+		function(next) {
+
+			var cmd = child_process.spawn('rm', [
+				'-fr',
+				path.join(self.targetPath, '.stemmer')
+			]);
+
+			cmd.on('close', function() {
+				next();
+			});
+		},
 		function(next) {
 
 			fs.unlink(path.join(self.targetPath, 'usr', 'bin', 'qemu-arm-static'), next);
@@ -217,10 +260,19 @@ Rootfs.prototype.installPackages = function(packages, opts, callback) {
 		return;
 	}
 
+	var pkgs = [];
+	for (var name in packages) {
+		var version = packages[name];
+		if (version == '*' || version == '')
+			pkgs.push(name);
+		else
+			pkgs.push(name + '=' + version);
+	}
+
 	var rootfsExecuter = new RootfsExecuter(self);
 
 	rootfsExecuter.addCommand('apt-get update');
-	rootfsExecuter.addCommand('apt-get install -f --no-install-recommends -q --force-yes -y ' + packages.join(' '))
+	rootfsExecuter.addCommand('apt-get install -f --no-install-recommends -q --force-yes -y ' + pkgs.join(' '))
 	rootfsExecuter.addCommand('rm -fr /var/lib/apt/lists/*');
 	rootfsExecuter.addCommand('apt-get clean');
 	rootfsExecuter.run({}, function() {

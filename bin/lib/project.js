@@ -12,6 +12,7 @@ var Project = module.exports = function() {
 	var self = this;
 
 	self.basePath = path.join(__dirname, '..', '..', 'projects');
+	self.recipePath = path.join(__dirname, '..', '..', 'recipes');
 	self.projectName = null;
 	self.settings = {};
 	self.arch = 'i386';
@@ -109,6 +110,7 @@ Project.prototype.build = function(opts, callback) {
 	var job = null;
 	var curRootfs = null;
 	var buildPath = path.join(__dirname, '..', '..', 'build', self.projectName, 'rootfs');
+	var packages = {};
 	async.series([
 		function(next) {
 
@@ -161,17 +163,70 @@ Project.prototype.build = function(opts, callback) {
 		},
 		function(next) {
 
-			if (!self.settings.packages) {
+			if (!self.settings.recipes) {
 				next();
 				return;
 			}
 
-			// Install packages in config file
-			var packages = [];
-			for (var packageName in self.settings.packages) {
-				packages.push(packageName);
+			// Apply recipes
+			var recipes = [];
+			for (var recipesName in self.settings.recipes) {
+				recipes.push(recipesName);
 			}
 
+			async.eachSeries(recipes, function(item, cb) {
+				var recipePath = path.join(self.recipePath, item);
+
+				fs.exists(recipePath, function(exists) {
+					if (!exists) {
+						cb(new Error('No such recipe \"' + item + '\"'));
+						return;
+					}
+
+					// Read package configuration file
+					fs.readFile(path.join(recipePath, 'packages.json'), function(err, data) {
+						if (err) {
+							cb(err);
+							return;
+						}
+
+						var pkgs = JSON.parse(data);
+						for (var name in pkgs) {
+							packages[name] = pkgs[name];
+						}
+
+						cb();
+
+					});
+				});
+			}, function(err) {
+
+				if (err) {
+					curRootfs.clearEnvironment(function() {
+						next(err);
+					});
+
+					return;
+				}
+
+				next(err);
+			});
+
+		},
+		function(next) {
+
+			if (Object.keys(packages).length == 0) {
+				next();
+				return;
+			}
+
+			if (self.settings.packages) {
+				for (var name in self.settings.packages) {
+					packages[name] = self.settings.packages[name];
+				}
+			}
+
+			// Install packages in config file
 			curRootfs.installPackages(packages, {}, function() {
 				next();
 			});

@@ -283,7 +283,14 @@ Arch.prototype.initRootfs = function(rootfs, callback) {
 					return;
 				}
 
-				rootfs.installPackages(packages, {}, function() {
+				// Preparing package list
+				var pkgs = {};
+				for (var name in packages) {
+					// No specific version
+					pkgs[name] = '*';
+				}
+
+				rootfs.installPackages(pkgs, {}, function() {
 					next();
 				});
 			});
