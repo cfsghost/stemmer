@@ -63,6 +63,11 @@ Recipe.prototype.init = function(opts, callback) {
 				// Finding deb caches
 				async.eachSeries(self.packages, function(name, _cb) {
 
+					if (self.packages[name] == '*') {
+						_cb();
+						return;
+					}
+
 					var files = [
 						path.join(self.pkgsPath, name + '_' + self.packages[name].split(':')[1] + '_' + self.arch + '.deb'),
 						path.join(self.pkgsPath, name + '_' + self.packages[name].split(':')[1] + '_all.deb')
