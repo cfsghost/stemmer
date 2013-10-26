@@ -12,6 +12,7 @@ var Rootfs = module.exports = function() {
 
 	self.arch = null;
 	self.targetPath = null;
+	self.initialDirPath = null;
 	self.environmentReady = false;
 };
 
@@ -179,39 +180,81 @@ Rootfs.prototype.prepareEnvironment = function(callback) {
 		},
 		function(next) {
 
-			// Initializing a fake environment to avoid invoke-rc.d running
-			var fakeLinks = [
-				'initctl',
-				'invoke-rc.d',
-				'restart',
-				'start',
-				'stop',
-				'start-stop-daemon',
-				'service'
-			];
+			// Setting proxy to speed up apt-get
+			var proxyConfig = 'Acquire::http::Proxy "http://127.0.0.1:3142/apt-cacher/";';
+
+			fs.writeFile(path.join(self.targetPath, 'etc', 'apt', 'apt.conf.d', '01stemmer'), proxyConfig, function(err) {
+				next(err);
+			});
+
+		},
+		function(next) {
 
 			var stemmerPath = path.join(self.targetPath, '.stemmer');
-			fs.mkdir(stemmerPath, function(err) {
-				if (err) {
-					next(err);
-					return;
-				}
+			async.series([
+				function(_next) {
+					fs.mkdir(stemmerPath, function(err) {
+						if (err) {
+							_next(err);
+							return;
+						}
 
-				async.each(fakeLinks, function(linkname, cb) {
-					fs.symlink('/bin/true', path.join(stemmerPath, linkname), function(err) {
-						cb(err);
+						self.initialDirPath = stemmerPath;
+						_next();
+
 					});
-				}, function(err) {
+				},
+				function(_next) {
 
-					next();
-				});
+					fs.mkdir(path.join(stemmerPath, 'packages'), function(err) {
+						if (err) {
+							_next(err);
+							return;
+						}
 
-			});
+						_next();
+
+					});
+				},
+				function(_next) {
+
+
+					// Initializing a fake environment to avoid invoke-rc.d running
+					var fakeLinks = [
+						'initctl',
+						'invoke-rc.d',
+						'restart',
+						'start',
+						'stop',
+						'start-stop-daemon',
+						'service'
+					];
+
+					async.each(fakeLinks, function(linkname, cb) {
+						fs.symlink('/bin/true', path.join(stemmerPath, linkname), function(err) {
+							cb(err);
+						});
+					}, function(err) {
+
+						_next(err);
+					});
+				}
+			], function(err) {
+				next(err);
+			})
 			
 		}
-	], function() {
+	], function(err) {
+		if (err) {
+			self.clearEnvironment(function() {
+				callback(err);
+			});
+
+			return;
+		}
+
 		self.environmentReady = true;
-		callback();
+		callback(null);
 	});
 };
 
@@ -227,12 +270,27 @@ Rootfs.prototype.clearEnvironment = function(callback) {
 
 		function(next) {
 
+			// Clear APT stuffs
+			var rootfsExecuter = new RootfsExecuter(self);
+			rootfsExecuter.addCommand('rm -fr /var/lib/apt/lists/*');
+			rootfsExecuter.addCommand('apt-get clean');
+			rootfsExecuter.run({}, function() {
+				next();
+			});
+		},
+		function(next) {
+
+			fs.unlink(path.join(self.targetPath, 'etc', 'apt', 'apt.conf.d', '01stemmer'), next);
+		},
+		function(next) {
+
 			var cmd = child_process.spawn('rm', [
 				'-fr',
-				path.join(self.targetPath, '.stemmer')
+				self.initialDirPath
 			]);
 
 			cmd.on('close', function() {
+				self.initialDirPath = null;
 				next();
 			});
 		},
@@ -273,10 +331,23 @@ Rootfs.prototype.installPackages = function(packages, opts, callback) {
 
 	rootfsExecuter.addCommand('apt-get update');
 	rootfsExecuter.addCommand('apt-get install -f --no-install-recommends -q --force-yes -y ' + pkgs.join(' '))
-	rootfsExecuter.addCommand('rm -fr /var/lib/apt/lists/*');
-	rootfsExecuter.addCommand('apt-get clean');
 	rootfsExecuter.run({}, function() {
 		callback(null);
 	});
 
+};
+
+Rootfs.prototype.applyPackages = function(opts, callback) {
+	var self = this;
+
+	var rootfsExecuter = new RootfsExecuter(self);
+
+	rootfsExecuter.addCommand('apt-get update');
+	rootfsExecuter.addCommand('dpkg --force-all -i /.stemmer/packages/*')
+
+	// Fix dependencies
+	rootfsExecuter.addCommand('apt-get install -f --no-install-recommends -q --force-yes -y --fix-missing')
+	rootfsExecuter.run({}, function() {
+		callback(null);
+	});
 };

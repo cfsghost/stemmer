@@ -7,6 +7,7 @@ var async = require('async');
 var Job = require('./job');
 var Arch = require('./arch');
 var Rootfs = require('./rootfs');
+var Recipe = require('./recipe');
 
 var Project = module.exports = function() {
 	var self = this;
@@ -111,6 +112,7 @@ Project.prototype.build = function(opts, callback) {
 	var curRootfs = null;
 	var buildPath = path.join(__dirname, '..', '..', 'build', self.projectName, 'rootfs');
 	var packages = {};
+	var recipes = {};
 	async.series([
 		function(next) {
 
@@ -169,36 +171,47 @@ Project.prototype.build = function(opts, callback) {
 			}
 
 			// Apply recipes
-			var recipes = [];
-			for (var recipesName in self.settings.recipes) {
-				recipes.push(recipesName);
-			}
+			var targetPkgDir = path.join(curRootfs.initialDirPath, 'packages');
+			async.eachSeries(Object.keys(self.settings.recipes), function(recipeName, cb) {
 
-			async.eachSeries(recipes, function(item, cb) {
-				var recipePath = path.join(self.recipePath, item);
-
-				fs.exists(recipePath, function(exists) {
-					if (!exists) {
-						cb(new Error('No such recipe \"' + item + '\"'));
+				var recipe = new Recipe(recipeName);
+				recipe.init({}, function(err) {
+					if (err) {
+						cb();
 						return;
 					}
 
-					// Read package configuration file
-					fs.readFile(path.join(recipePath, 'packages.json'), function(err, data) {
-						if (err) {
-							cb(err);
-							return;
-						}
+					recipes[recipeName] = recipe;
 
-						var pkgs = JSON.parse(data);
-						for (var name in pkgs) {
-							packages[name] = pkgs[name];
-						}
+					// Getting all caches
+					var pkgNames = Object.keys(recipe.packageCaches);
+					if (pkgNames.length == 0) {
+						cb();
+						return;
+					}
+					
+					async.eachSeries(pkgNames, function(name, _cb) {
+
+						var cacheFilename = recipe.packageCaches[name];
+
+						// Copying to target rootfs
+						var cmd = child_process.spawn('cp', [
+							'-a',
+							cacheFilename,
+							targetPkgDir
+						]);
+
+						cmd.on('close', function() {
+
+							_cb();
+						});
+					}, function() {
 
 						cb();
-
 					});
+
 				});
+
 			}, function(err) {
 
 				if (err) {
@@ -215,10 +228,13 @@ Project.prototype.build = function(opts, callback) {
 		},
 		function(next) {
 
-			if (Object.keys(packages).length == 0) {
-				next();
-				return;
-			}
+			// Apply packages in initial directory
+			curRootfs.applyPackages({}, function(err) {
+				next(err);
+			});
+
+		},
+		function(next) {
 
 			if (self.settings.packages) {
 				for (var name in self.settings.packages) {
@@ -226,9 +242,24 @@ Project.prototype.build = function(opts, callback) {
 				}
 			}
 
+			if (Object.keys(packages).length == 0) {
+				next();
+				return;
+			}
+
 			// Install packages in config file
 			curRootfs.installPackages(packages, {}, function() {
-				next();
+
+				// Create caches
+				async.eachSeries(recipes, function(recipe, cb) {
+
+					recipe.cache({}, function(err) {
+						cb();
+					});
+					
+				}, function() {
+					next();
+				});
 			});
 		},
 		function(next) {

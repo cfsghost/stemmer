@@ -12,7 +12,6 @@
 	},
 	"recipes": {
 		"samba": "*"
-	
 	},
 	"packages": {
 		"xserver-xorg": "*",

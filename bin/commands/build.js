@@ -16,7 +16,11 @@ project.load(process.argv[2], function(err) {
 		return;
 	}
 
-	project.build({}, function() {
+	project.build({}, function(err) {
+		if (err) {
+			console.log(err);
+			return;
+		}
 		console.log('Done');
 	});
 })
