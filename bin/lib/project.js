@@ -274,6 +274,38 @@ Project.prototype.build = function(opts, callback) {
 			curRootfs.clearEnvironment(next);
 		},
 		function(next) {
+			
+			// Overwriting files
+			var overwritePath = path.join(self.basePath, self.projectName, 'overwrite');
+			fs.readdir(overwritePath, function(err, files) {
+				if (err) {
+					next(err);
+					return;
+				}
+
+				if (files.length == 0) {
+					next();
+					return;
+				}
+
+				var sources = [];
+				for (var index in files) {
+					sources.push(path.join(overwritePath, files[index]));
+				}
+
+				var args = [ '-a' ].concat(sources, [ curRootfs.targetPath ]);
+
+				var cmd = child_process.spawn('cp', args);
+
+				cmd.stdout.pipe(process.stdout);
+				cmd.stderr.pipe(process.stderr);
+
+				cmd.on('close', function() {
+					next();
+				});
+			});
+		},
+		function(next) {
 
 			// Remove old rootfs if it exists
 			self.getRootfs({}, function(err, rootfs) {
