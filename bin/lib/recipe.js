@@ -61,34 +61,36 @@ Recipe.prototype.init = function(opts, callback) {
 				}
 
 				// Finding deb caches
-				async.eachSeries(self.packages, function(name, _cb) {
+				async.eachSeries(Object.keys(self.packages), function(name, cb) {
 
 					if (self.packages[name] == '*') {
-						_cb();
+						cb();
 						return;
 					}
 
 					var files = [
-						path.join(self.pkgsPath, name + '_' + self.packages[name].split(':')[1] + '_' + self.arch + '.deb'),
+						path.join(self.pkgsPath, name + '_' + self.packages[name].split(':')[1] + '_' + opts.arch + '.deb'),
 						path.join(self.pkgsPath, name + '_' + self.packages[name].split(':')[1] + '_all.deb')
 					];
+console.log('===> ' + path.join(self.pkgsPath, name + '_' + self.packages[name].split(':')[1] + '_' + self.arch + '.deb'));
 
-					async.eachSeries(files, function(filename, __cb) {
+console.log(files);
+					async.eachSeries(files, function(filename, _cb) {
 
 						fs.exists(filename, function(exists) {
 
 							if (!exists) {
-								__cb();
+								_cb();
 								return;
 							}
 
 							self.packageCaches[name] = filename;
 
-							__cb(true);
+							_cb(true);
 						});
 					}, function(found) {
 
-						_cb();
+						cb();
 					});
 				}, function() {
 					next();
@@ -104,18 +106,40 @@ Recipe.prototype.init = function(opts, callback) {
 Recipe.prototype.cache = function(opts, callback) {
 	var self = this;
 
-	async.eachSeries(Object.keys(self.packages), function(packageName, next) {
-		if (self.packageCaches[packageName]) {
-			next();
-			return;
-		}
+	async.series([
+		function(next) {
 
-		self.cacheOne(packageName, {}, function(success) {
-			next();
-		});
-		
-	}, function() {
-		callback();
+			fs.exists(self.pkgsPath, function(exists) {
+
+				if (!exists) {
+					fs.mkdir(targetPath, function(err) {
+						next(err);
+					});
+					return;
+				}
+
+				next();
+			});
+		},
+		function(next) {
+
+			async.eachSeries(Object.keys(self.packages), function(packageName, cb) {
+				if (self.packageCaches[packageName]) {
+					cb();
+					return;
+				}
+
+				self.cacheOne(packageName, {}, function(success) {
+					cb();
+				});
+				
+			}, function() {
+				cb();
+			});
+		}
+	], function(err) {
+
+		callback(err);
 	});
 };
 

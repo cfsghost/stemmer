@@ -190,6 +190,16 @@ Rootfs.prototype.prepareEnvironment = function(callback) {
 		},
 		function(next) {
 
+			// Setting local repository
+			var repo = 'deb file:/.stemmer/packages ./';
+
+			fs.writeFile(path.join(self.targetPath, 'etc', 'apt', 'sources.list.d', '0stemmer'), repo, function(err) {
+				next(err);
+			});
+
+		},
+		function(next) {
+
 			var stemmerPath = path.join(self.targetPath, '.stemmer');
 			async.series([
 				function(_next) {
@@ -274,6 +284,9 @@ Rootfs.prototype.clearEnvironment = function(callback) {
 			var rootfsExecuter = new RootfsExecuter(self);
 			rootfsExecuter.addCommand('rm -fr /var/lib/apt/lists/*');
 			rootfsExecuter.addCommand('apt-get clean');
+			rootfsExecuter.addCommand('rm -fr /var/lib/dpkg/available-old');
+			rootfsExecuter.addCommand('rm -fr /var/lib/dpkg/diversions-old');
+			rootfsExecuter.addCommand('rm -fr /var/lib/dpkg/status-old');
 			rootfsExecuter.run({}, function() {
 				next();
 			});
@@ -281,6 +294,10 @@ Rootfs.prototype.clearEnvironment = function(callback) {
 		function(next) {
 
 			fs.unlink(path.join(self.targetPath, 'etc', 'apt', 'apt.conf.d', '01stemmer'), next);
+		},
+		function(next) {
+
+			fs.unlink(path.join(self.targetPath, 'etc', 'apt', 'sources.list.d', 'stemmer'), next);
 		},
 		function(next) {
 
@@ -330,7 +347,7 @@ Rootfs.prototype.installPackages = function(packages, opts, callback) {
 	var rootfsExecuter = new RootfsExecuter(self);
 
 	rootfsExecuter.addCommand('apt-get update');
-	rootfsExecuter.addCommand('apt-get install -f --no-install-recommends -q --force-yes -y ' + pkgs.join(' '))
+	rootfsExecuter.addCommand('apt-get install -f --no-install-recommends -q --force-yes -y --fix-missing ' + pkgs.join(' '))
 	rootfsExecuter.run({}, function() {
 		callback(null);
 	});
@@ -340,14 +357,39 @@ Rootfs.prototype.installPackages = function(packages, opts, callback) {
 Rootfs.prototype.applyPackages = function(opts, callback) {
 	var self = this;
 
-	var rootfsExecuter = new RootfsExecuter(self);
+	// TODO: check Packages.gz and remove it if it doesn't exist
+	var failed = false;
+	var dpkg = child_process.spawn('dpkg-scanpackages', [
+		path.join(self.targetPath, '.stemmer', 'packages'),
+		'/dev/null'
+	]);
 
-	rootfsExecuter.addCommand('apt-get update');
-	rootfsExecuter.addCommand('dpkg --force-all -i /.stemmer/packages/*')
+	var gzip = child_process.spawn('gzip', [
+		'-9c'
+	]);
 
-	// Fix dependencies
-	rootfsExecuter.addCommand('apt-get install -f --no-install-recommends -q --force-yes -y --fix-missing')
-	rootfsExecuter.run({}, function() {
-		callback(null);
+	dpkg.stdout.on('data', function(data) {
+		gzip.stdin.write(data);
 	});
+
+	dpkg.on('close', function() {
+		gzip.stdin.end();
+	});
+
+	var packageListFile = path.join(self.targetPath, '.stemmer', 'packages', 'Packages.gz');
+	gzip.stdout.on('data', function(data) {
+
+		fs.appendFile(packageListFile, data, function(err) {
+			if (err) {
+				callback(err);
+				failed = true;
+			}
+		});
+	});
+
+	gzip.on('close', function() {
+		if (!failed)
+			callback();
+	});
+
 };

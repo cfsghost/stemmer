@@ -1,0 +1,8 @@
+{
+	"xserver-xorg": "*",
+	"xserver-xorg-input-all": "*",
+	"xserver-xorg-video-fbdev": "*",
+	"xserver-xorg-core": "*",
+	"xinit": "*",
+	"xterm": "*"
+}

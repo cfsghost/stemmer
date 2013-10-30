@@ -172,16 +172,23 @@ Project.prototype.build = function(opts, callback) {
 
 			// Apply recipes
 			var targetPkgDir = path.join(curRootfs.initialDirPath, 'packages');
+
 			async.eachSeries(Object.keys(self.settings.recipes), function(recipeName, cb) {
+				console.log(recipeName);
 
 				var recipe = new Recipe(recipeName);
-				recipe.init({}, function(err) {
+				recipe.init({ arch: self.arch }, function(err) {
 					if (err) {
-						cb();
+						cb(err);
 						return;
 					}
 
 					recipes[recipeName] = recipe;
+
+					// Append to package list
+					for (var name in recipe.packages) {
+						packages[name] = recipe.packages[name];
+					}
 
 					// Getting all caches
 					var pkgNames = Object.keys(recipe.packageCaches);
@@ -222,7 +229,7 @@ Project.prototype.build = function(opts, callback) {
 					return;
 				}
 
-				next(err);
+				next();
 			});
 
 		},

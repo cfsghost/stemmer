@@ -11,15 +11,10 @@
 		}
 	},
 	"recipes": {
-		"samba": "*"
+		"samba": "*",
+		"xserver": "*"
 	},
 	"packages": {
-		"xserver-xorg": "*",
-		"xserver-xorg-input-all": "*",
-		"xserver-xorg-video-fbdev": "*",
-		"xserver-xorg-core": "*",
-		"xinit": "*",
-		"xterm": "*",
 		"libglib2.0-0": "*",
 		"libgtk2.0-0": "*",
 		"libnss3": "*",

@@ -1,0 +1,8 @@
+{
+	"samba": "2:4.0.10+dfsg-3",
+	"samba-common": "2:4.0.10+dfsg-3",
+	"samba-common-bin": "2:4.0.10+dfsg-3",
+	"samba-dsdb-modules": "2:4.0.10+dfsg-3",
+	"samba-libs": "2:4.0.10+dfsg-3",
+	"python-samba": "2:4.0.10+dfsg-3"
+}
