@@ -174,7 +174,6 @@ Project.prototype.build = function(opts, callback) {
 			var targetPkgDir = path.join(curRootfs.initialDirPath, 'packages');
 
 			async.eachSeries(Object.keys(self.settings.recipes), function(recipeName, cb) {
-				console.log(recipeName);
 
 				var recipe = new Recipe(recipeName);
 				recipe.init({ arch: self.arch }, function(err) {

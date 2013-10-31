@@ -63,6 +63,7 @@ Recipe.prototype.init = function(opts, callback) {
 				// Finding deb caches
 				async.eachSeries(Object.keys(self.packages), function(name, cb) {
 
+					// Ignore package if it doesn't specific version
 					if (self.packages[name] == '*') {
 						cb();
 						return;
@@ -72,9 +73,7 @@ Recipe.prototype.init = function(opts, callback) {
 						path.join(self.pkgsPath, name + '_' + self.packages[name].split(':')[1] + '_' + opts.arch + '.deb'),
 						path.join(self.pkgsPath, name + '_' + self.packages[name].split(':')[1] + '_all.deb')
 					];
-console.log('===> ' + path.join(self.pkgsPath, name + '_' + self.packages[name].split(':')[1] + '_' + self.arch + '.deb'));
 
-console.log(files);
 					async.eachSeries(files, function(filename, _cb) {
 
 						fs.exists(filename, function(exists) {
@@ -109,6 +108,7 @@ Recipe.prototype.cache = function(opts, callback) {
 	async.series([
 		function(next) {
 
+			// Create cache directory
 			fs.exists(self.pkgsPath, function(exists) {
 
 				if (!exists) {
@@ -123,7 +123,10 @@ Recipe.prototype.cache = function(opts, callback) {
 		},
 		function(next) {
 
+			// Cache packages
 			async.eachSeries(Object.keys(self.packages), function(packageName, cb) {
+
+				// Skip if package file exists already
 				if (self.packageCaches[packageName]) {
 					cb();
 					return;
