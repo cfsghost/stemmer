@@ -13,7 +13,8 @@ var RootfsActivator = require('../lib/rootfs_activator');
 var Arch = module.exports = function() {
 	var self = this;
 
-	self.basePath = path.join(__dirname, '..', '..', 'arch');
+	self.basePath = path.join(__dirname, '..', '..', 'base');
+	self.archPath = path.join(__dirname, '..', '..', 'arch');
 	self.arch = 'i386';
 	self.platform = null;
 	self.refPlatform = null;
@@ -23,7 +24,7 @@ var Arch = module.exports = function() {
 Arch.prototype.init = function(callback) {
 	var self = this;
 
-	self.loadConfig(path.join(self.basePath, self.platform || self.arch, 'config.json'), function(err) {
+	self.loadConfig(path.join(self.archPath, self.platform || self.arch, 'config.json'), function(err) {
 		callback(err, self);
 	});
 };
@@ -260,6 +261,7 @@ Arch.prototype.makeRootfs = function(callback) {
 		}
 		
 	], function(err) {
+
 		job.release(function() {
 			callback(err, archRootfs || null);
 		});
@@ -297,43 +299,22 @@ Arch.prototype.initRootfs = function(rootfs, callback) {
 		},
 		function(next) {
 
-			rootfs.clearEnvironment(next);
+			// Overwriting specific files from arch directory
+			var overwritePath = path.join(self.archPath, self.platform || self.arch, 'overwrite');
+			rootfs.applyOverwrite(overwritePath, next);
 		},
 		function(next) {
 
-			// Overwriting files
-			var overwritePath = path.join(self.basePath, self.platform || self.arch, 'overwrite');
-			fs.readdir(overwritePath, function(err, files) {
-				if (err) {
-					next(err);
-					return;
-				}
-
-				if (files.length == 0) {
-					next();
-					return;
-				}
-
-				var sources = [];
-				for (var index in files) {
-					sources.push(path.join(overwritePath, files[index]));
-				}
-
-				var args = [ '-a' ].concat(sources, [ rootfs.targetPath ]);
-
-				var cmd = child_process.spawn('cp', args);
-
-				cmd.stdout.pipe(process.stdout);
-				cmd.stderr.pipe(process.stderr);
-
-				cmd.on('close', function() {
-					next();
-				});
-			});
+			// Overwriting specific files from base directory
+			var overwritePath = path.join(self.basePath, 'overwrite');
+			rootfs.applyOverwrite(overwritePath, next);
 		}
 
-	], function() {
+	], function(err) {
 
-		callback();
+		// Clear rootfs
+		rootfs.clearEnvironment();
+
+		callback(err);
 	});
 };

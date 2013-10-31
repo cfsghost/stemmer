@@ -137,6 +137,47 @@ Rootfs.prototype.remove = function(callback) {
 	});
 };
 
+Rootfs.prototype.applyOverwrite = function(sourcePath, callback) {
+	var self = this;
+
+	fs.exists(sourcePath, function(exists) {
+
+		if (!exists) {
+			callback(new Error('Source for overwriting doesn\'t exist'));
+			return;
+		}
+
+		// Overwriting files
+		fs.readdir(sourcePath, function(err, files) {
+			if (err) {
+				callback(err);
+				return;
+			}
+
+			if (files.length == 0) {
+				callback(null);
+				return;
+			}
+
+			var sources = [];
+			for (var index in files) {
+				sources.push(path.join(sourcePath, files[index]));
+			}
+
+			var args = [ '-a' ].concat(sources, [ self.targetPath ]);
+
+			var cmd = child_process.spawn('cp', args);
+
+			cmd.stdout.pipe(process.stdout);
+			cmd.stderr.pipe(process.stderr);
+
+			cmd.on('close', function() {
+				callback(null);
+			});
+		});
+	});
+};
+
 Rootfs.prototype.prepareEnvironment = function(callback) {
 	var self = this;
 

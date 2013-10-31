@@ -9,14 +9,14 @@ var Job = module.exports = function(id) {
 	var self = this;
 
 	self.id = id || uuid.v1();
-	self.basePath = path.join(__dirname, '..', '..', 'job');
+	self.jobBasePath = path.join(__dirname, '..', '..', 'job');
 	self.jobPath = null;
 };
 
 Job.prototype.create = function(callback) {
 	var self = this;
 
-	self.jobPath = path.join(self.basePath, self.id);
+	self.jobPath = path.join(self.jobBasePath, self.id);
 	fs.mkdir(self.jobPath, function() {
 		callback();
 	});

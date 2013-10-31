@@ -12,7 +12,7 @@ var Recipe = require('./recipe');
 var Project = module.exports = function() {
 	var self = this;
 
-	self.basePath = path.join(__dirname, '..', '..', 'projects');
+	self.projectBasePath = path.join(__dirname, '..', '..', 'projects');
 	self.recipePath = path.join(__dirname, '..', '..', 'recipes');
 	self.projectName = null;
 	self.settings = {};
@@ -32,7 +32,7 @@ Project.prototype.load = function(projectName, callback) {
 	}
 
 	self.projectName = projectName;
-	var configPath = path.join(self.basePath, projectName, 'project.json');
+	var configPath = path.join(self.projectBasePath, projectName, 'project.json');
 
 	fs.readFile(configPath, function(err, data) {
 		if (err) {
@@ -275,35 +275,9 @@ Project.prototype.build = function(opts, callback) {
 		},
 		function(next) {
 			
-			// Overwriting files
-			var overwritePath = path.join(self.basePath, self.projectName, 'overwrite');
-			fs.readdir(overwritePath, function(err, files) {
-				if (err) {
-					next(err);
-					return;
-				}
-
-				if (files.length == 0) {
-					next();
-					return;
-				}
-
-				var sources = [];
-				for (var index in files) {
-					sources.push(path.join(overwritePath, files[index]));
-				}
-
-				var args = [ '-a' ].concat(sources, [ curRootfs.targetPath ]);
-
-				var cmd = child_process.spawn('cp', args);
-
-				cmd.stdout.pipe(process.stdout);
-				cmd.stderr.pipe(process.stderr);
-
-				cmd.on('close', function() {
-					next();
-				});
-			});
+			// Overwriting specific files from project source
+			var overwritePath = path.join(self.projectBasePath, self.projectName, 'overwrite');
+			curRootfs.applyOverwrite(overwritePath, next);
 		},
 		function(next) {
 
