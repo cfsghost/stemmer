@@ -380,48 +380,67 @@ Rootfs.prototype.fetchPackageIndexes = function(outputPath, callback) {
 	var rootfsExecuter = new RootfsExecuter(self);
 
 	var sourceDirPath = path.join(self.targetPath, 'var', 'lib', 'apt', 'lists');
-	var indexes = [
-		sourceDirPath + '/*_Packages',
-		sourceDirPath + '/*_Translation-en',
-		sourceDirPath + '/*_InRelease',
-		sourceDirPath + '/*_Release'
-	];
 
-		var ls = child_process.spawn('ls', [
-			'-a',
-			sourceDirPath,
-		]);
+	fs.readdir(sourceDirPath, function(err, files) {
+		if (err) {
+			next(err);
+			return;
+		}
 
-		ls.stdout.on('data', function(data) {
-			console.log(data.toString());
-		});
+		var filelist = [];
 
-	async.eachSeries(indexes, function(sourcePath, next) {
+		// Finding index files
+		async.eachSeries(files, function(filename, next) {
 
-console.log('Copy ' + sourcePath + ' to ' + outputPath);
+			if (filename.lastIndexOf('_Packages') > 0 ||
+				filename.lastIndexOf('_Translation-en') > 0 ||
+				filename.lastIndexOf('_InRelease') > 0 ||
+				filename.lastIndexOf('_Release') > 0) {
 
-
-		// Copying index files
-		var cmd = child_process.spawn('cp', [
-			'-a',
-			sourcePath,
-			outputPath
-		]);
-
-		cmd.on('close', function() {
+				filelist.push(filename);
+			}
 
 			next();
-		});
-	}, function() {
-		callback(null);
+
+		}, function() {
+
+			// Copying index files
+			var args = [ '-a' ].concat(filelist, [ outputPath ]);
+			var cmd = child_process.spawn('cp', args);
+			cmd.on('close', function() {
+
+				callback(null);
+			});
+		})
 	});
 
+};
+
+Rootfs.prototype.registerServices = function(services, opts, callback) {
+	var self = this;
+
+	if (Object.keys(services).length == 0) {
+		process.nextTick(function() {
+			callback(null);
+		});
+		return;
+	}
+
+	var rootfsExecuter = new RootfsExecuter(self);
+
+	for (var name in services) {
+		rootfsExecuter.addCommand('insserv -v -d /etc/init.d/' + name);
+	}
+
+	rootfsExecuter.run({}, function() {
+		callback(null);
+	});
 };
 
 Rootfs.prototype.installPackages = function(packages, opts, callback) {
 	var self = this;
 
-	if (packages.length == 0) {
+	if (Object.keys(packages).length == 0) {
 		process.nextTick(function() {
 			callback(null);
 		});

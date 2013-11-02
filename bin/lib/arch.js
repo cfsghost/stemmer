@@ -7,14 +7,16 @@ var path = require('path');
 var child_process = require('child_process');
 var async = require('async');
 
-var Job = require('../lib/job');
-var Strap = require('../lib/strap');
+var Base = require('./base');
+var Job = require('./job');
+var Strap = require('./strap');
 var Rootfs = require('./rootfs');
-var RootfsActivator = require('../lib/rootfs_activator');
+var RootfsActivator = require('./rootfs_activator');
 
 var Arch = module.exports = function() {
 	var self = this;
 
+	self.base = null;
 	self.basePath = path.join(__dirname, '..', '..', 'base');
 	self.archPath = path.join(__dirname, '..', '..', 'arch');
 	self.arch = 'i386';
@@ -28,8 +30,23 @@ util.inherits(Arch, events.EventEmitter);
 Arch.prototype.init = function(callback) {
 	var self = this;
 
+
 	self.loadConfig(path.join(self.archPath, self.platform || self.arch, 'config.json'), function(err) {
-		callback(err, self);
+		if (err) {
+			callback(err);
+			return;
+		}
+
+		// Initializing base
+		self.base = new Base();
+		self.base.init(function(err) {
+			if (err) {
+				callback(err);
+				return;
+			}
+
+			callback(null, self);
+		});
 	});
 };
 
@@ -146,7 +163,7 @@ Arch.prototype.makeRootfs = function(callback) {
 	var job = null;
 	var archRootfs = null;
 	var activateRootfs = true;
-	console.log('Making Rootfs...');
+
 	async.series([
 
 		function(next) {
@@ -332,7 +349,7 @@ Arch.prototype.initRootfs = function(rootfs, callback) {
 		},
 		function(next) {
 
-			self.emit('InitRootfs', 'overwriting');
+			self.emit('InitRootfs', 'arch_overwrite');
 
 			// Overwriting specific files from arch directory
 			var overwritePath = path.join(self.archPath, self.platform || self.arch, 'overwrite');
@@ -340,9 +357,11 @@ Arch.prototype.initRootfs = function(rootfs, callback) {
 		},
 		function(next) {
 
-			// Overwriting specific files from base directory
-			var overwritePath = path.join(self.basePath, 'overwrite');
-			rootfs.applyOverwrite(overwritePath, next);
+			// Apply settings of base
+			self.base.applyOverwrite(rootfs, function() {
+				self.base.initiateServices(rootfs, next);
+			});
+
 		}
 
 	], function(err) {
