@@ -1,7 +1,7 @@
 {
 	"name": "nas",
 	"description": "Base system",
-	"platform": "cubieboard",
+	"platform": "cubieboard-stemos",
 	"settings": {
 		"hostname": "StemNAS"
 	},

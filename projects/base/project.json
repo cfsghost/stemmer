@@ -1,7 +1,7 @@
 {
 	"name": "base",
 	"description": "Base system",
-	"platform": "cubieboard",
+	"platform": "cubieboard-stemos",
 	"network": {
 		"eth0": {
 			"method": "dhcp"
