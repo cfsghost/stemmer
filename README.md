@@ -8,4 +8,4 @@ Installation
 
 Install dependencies via apt-get on Debian:
 
-	apt-get install multistrap qemu-user-static dpkg-dev
+	apt-get install multistrap qemu-user-static dpkg-dev apt-cacher
