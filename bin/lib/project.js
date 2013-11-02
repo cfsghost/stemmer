@@ -1,9 +1,12 @@
 "use strict";
 
+var util = require('util');
+var events = require('events');
 var fs = require('fs');
 var path = require('path');
 var child_process = require('child_process');
 var async = require('async');
+
 var Job = require('./job');
 var Arch = require('./arch');
 var Rootfs = require('./rootfs');
@@ -20,6 +23,8 @@ var Project = module.exports = function() {
 	self.platform = null;
 	self.refPlatform = null;
 };
+
+util.inherits(Project, events.EventEmitter);
 
 Project.prototype.load = function(projectName, callback) {
 	var self = this;
@@ -129,6 +134,8 @@ Project.prototype.build = function(opts, callback) {
 			// This architecture depends on another one
 			if (self.refPlatform) {
 
+				self.emit('Build', 'init_platform');
+
 				// Based on referenced platform
 				self.refPlatform.getRootfs({ makeIfDoesNotExists: true }, function(err, refRootfs) {
 
@@ -171,6 +178,8 @@ Project.prototype.build = function(opts, callback) {
 			curRootfs.prepareEnvironment(next);
 		},
 		function(next) {
+
+			self.emit('Build', 'apply_recipes');
 
 			if (!self.settings.recipes) {
 				next();
@@ -241,6 +250,8 @@ Project.prototype.build = function(opts, callback) {
 		},
 		function(next) {
 
+			self.emit('Build', 'apply_packages');
+
 			// Apply packages in initial directory
 			curRootfs.applyPackages({}, function(err) {
 				next(err);
@@ -259,6 +270,8 @@ Project.prototype.build = function(opts, callback) {
 				next();
 				return;
 			}
+
+			self.emit('Build', 'install_packages');
 
 			// Install packages in config file
 			curRootfs.installPackages(packages, {}, function() {
@@ -280,12 +293,16 @@ Project.prototype.build = function(opts, callback) {
 			curRootfs.clearEnvironment(next);
 		},
 		function(next) {
+
+			self.emit('Build', 'overwrite');
 			
 			// Overwriting specific files from project source
 			var overwritePath = path.join(self.projectBasePath, self.projectName, 'overwrite');
 			curRootfs.applyOverwrite(overwritePath, next);
 		},
 		function(next) {
+
+			self.emit('Build', 'save');
 
 			// Remove old rootfs if it exists
 			self.getRootfs({}, function(err, rootfs) {
