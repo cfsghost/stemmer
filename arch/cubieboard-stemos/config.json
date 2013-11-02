@@ -1,0 +1,35 @@
+{
+	"platform": "cubieboard",
+	"repo": {
+		"General": {
+			"arch": "armhf",
+			"cleanup": true,
+			"noauth": true,
+			"unpack": true,
+			"debootstrap": [ "Grip", "Debian" ],
+			"aptsources": [ "Grip", "Debian" ]
+		},
+		"Grip": {
+			"packages": [
+				"ntpdate",
+				"net-tools",
+				"isc-dhcp-client",
+				"ifupdown",
+				"parted",
+				"policykit-1",
+				"dbus",
+				"udisks2",
+				"connman"
+			],
+			"source": "http://www.emdebian.org/grip",
+			"keyring": "emdebian-archive-keyring",
+			"suite": "sid-grip"
+		},
+		"Debian": {
+			"packages": [ "fonts-droid" ],
+			"source": "http://ftp.us.debian.org/debian",
+			"keyring": "debian-archive-keyring",
+			"suite": "sid"
+		}
+	}
+}

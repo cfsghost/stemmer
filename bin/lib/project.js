@@ -140,11 +140,14 @@ Project.prototype.build = function(opts, callback) {
 						}
 
 						curRootfs = rootfs;
+
 						next();
 					});
 				});
 				return;
 			}
+
+			next();
 		},
 		function(next) {
 
@@ -153,13 +156,17 @@ Project.prototype.build = function(opts, callback) {
 				return;
 			}
 
-
 			// Write to hostname configuration file
-			fs.writeFile(path.join(curRootfs.targetPath, 'etc', 'hostname'), self.settings.hostname, function() {
-				next();
+			fs.writeFile(path.join(curRootfs.targetPath, 'etc', 'hostname'), self.settings.hostname, function(err) {
+				next(err);
 			});
 		},
 		function(next) {
+
+			if (!curRootfs) {
+				next(new Error('No usable rootfs'));
+				return;
+			}
 
 			curRootfs.prepareEnvironment(next);
 		},

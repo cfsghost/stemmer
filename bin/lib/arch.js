@@ -1,5 +1,7 @@
 "use strict";
 
+var util = require('util');
+var events = require('events');
 var fs = require('fs');
 var path = require('path');
 var child_process = require('child_process');
@@ -20,6 +22,8 @@ var Arch = module.exports = function() {
 	self.refPlatform = null;
 	self.settings = {};
 };
+
+util.inherits(Arch, events.EventEmitter);
 
 Arch.prototype.init = function(callback) {
 	var self = this;
@@ -142,6 +146,7 @@ Arch.prototype.makeRootfs = function(callback) {
 	var job = null;
 	var archRootfs = null;
 	var activateRootfs = true;
+	console.log('Making Rootfs...');
 	async.series([
 
 		function(next) {
@@ -162,7 +167,7 @@ Arch.prototype.makeRootfs = function(callback) {
 				// Based on referenced platform
 				self.refPlatform.getRootfs({ makeIfDoesNotExists: true }, function(err, refRootfs) {
 
-					// Clone
+					// Clone from job directory to another place for storing
 					refRootfs.clone(targetPath, function(err, rootfs) {
 						if (err) {
 							next(err);
@@ -271,12 +276,17 @@ Arch.prototype.makeRootfs = function(callback) {
 Arch.prototype.initRootfs = function(rootfs, callback) {
 	var self = this;
 
+	self.emit('InitRootfs', 'start');
+	var indexPath = null;
 	async.series([
 		function(next) {
 
+			self.emit('InitRootfs', 'preparing');
 			rootfs.prepareEnvironment(next);
 		},
 		function(next) {
+
+			self.emit('InitRootfs', 'installing_packages');
 
 			// Installing packages
 			self.getPackages(function(packages) {
@@ -299,6 +309,31 @@ Arch.prototype.initRootfs = function(rootfs, callback) {
 		},
 		function(next) {
 
+			// Create directoy to store indexes
+			indexPath = path.join(self.archPath, self.platform || self.arch, 'index');
+			fs.exists(indexPath, function(exists) {
+				if (!exists) {
+					fs.mkdir(indexPath, next);
+					return;
+				}
+
+				next();
+			});
+
+		},
+		function(next) {
+
+			self.emit('InitRootfs', 'making_packages_index');
+
+			// Cache package indexes
+			rootfs.fetchPackageIndexes(indexPath, function() {
+				next();
+			});
+		},
+		function(next) {
+
+			self.emit('InitRootfs', 'overwriting');
+
 			// Overwriting specific files from arch directory
 			var overwritePath = path.join(self.archPath, self.platform || self.arch, 'overwrite');
 			rootfs.applyOverwrite(overwritePath, next);
@@ -313,8 +348,9 @@ Arch.prototype.initRootfs = function(rootfs, callback) {
 	], function(err) {
 
 		// Clear rootfs
-		rootfs.clearEnvironment();
+		rootfs.clearEnvironment(function() {
+			callback(err);
+		});
 
-		callback(err);
 	});
 };

@@ -8,6 +8,9 @@ if (process.argv.length < 3) {
 var Arch = require('../lib/arch');
 
 var arch = new Arch();
+arch.on('InitRootfs', function(job) {
+	console.log(job);
+});
 arch.platform = process.argv[2];
 arch.init(function(err) {
 	if (err) {

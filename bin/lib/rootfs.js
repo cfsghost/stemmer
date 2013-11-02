@@ -168,8 +168,8 @@ Rootfs.prototype.applyOverwrite = function(sourcePath, callback) {
 
 			var cmd = child_process.spawn('cp', args);
 
-			cmd.stdout.pipe(process.stdout);
-			cmd.stderr.pipe(process.stderr);
+//			cmd.stdout.pipe(process.stdout);
+//			cmd.stderr.pipe(process.stderr);
 
 			cmd.on('close', function() {
 				callback(null);
@@ -244,15 +244,23 @@ Rootfs.prototype.prepareEnvironment = function(callback) {
 			var stemmerPath = path.join(self.targetPath, '.stemmer');
 			async.series([
 				function(_next) {
-					fs.mkdir(stemmerPath, function(err) {
-						if (err) {
-							_next(err);
+					fs.exists(stemmerPath, function(exists) {
+						if (exists) {
+							self.initialDirPath = stemmerPath;
+							next();
 							return;
 						}
 
-						self.initialDirPath = stemmerPath;
-						_next();
+						fs.mkdir(stemmerPath, function(err) {
+							if (err) {
+								_next(err);
+								return;
+							}
 
+							self.initialDirPath = stemmerPath;
+							_next();
+
+						});
 					});
 				},
 				function(_next) {
@@ -364,6 +372,50 @@ Rootfs.prototype.clearEnvironment = function(callback) {
 		self.environmentReady = false;
 		callback();
 	});
+};
+
+Rootfs.prototype.fetchPackageIndexes = function(outputPath, callback) {
+	var self = this;
+
+	var rootfsExecuter = new RootfsExecuter(self);
+
+	var sourceDirPath = path.join(self.targetPath, 'var', 'lib', 'apt', 'lists');
+	var indexes = [
+		sourceDirPath + '/*_Packages',
+		sourceDirPath + '/*_Translation-en',
+		sourceDirPath + '/*_InRelease',
+		sourceDirPath + '/*_Release'
+	];
+
+		var ls = child_process.spawn('ls', [
+			'-a',
+			sourceDirPath,
+		]);
+
+		ls.stdout.on('data', function(data) {
+			console.log(data.toString());
+		});
+
+	async.eachSeries(indexes, function(sourcePath, next) {
+
+console.log('Copy ' + sourcePath + ' to ' + outputPath);
+
+
+		// Copying index files
+		var cmd = child_process.spawn('cp', [
+			'-a',
+			sourcePath,
+			outputPath
+		]);
+
+		cmd.on('close', function() {
+
+			next();
+		});
+	}, function() {
+		callback(null);
+	});
+
 };
 
 Rootfs.prototype.installPackages = function(packages, opts, callback) {
