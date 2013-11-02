@@ -1,0 +1,8 @@
+#!/usr/bin/env node
+
+var StemDaemon = require('../lib/stemd');
+
+var stemDaemon = new StemDaemon();
+stemDaemon.init();
+
+
