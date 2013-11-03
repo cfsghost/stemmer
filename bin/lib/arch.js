@@ -307,10 +307,29 @@ Arch.prototype.initRootfs = function(rootfs, callback) {
 
 	var indexPath = null;
 	async.series([
+
 		function(next) {
 
 			self.emit('configure', 'preparing');
 			rootfs.prepareEnvironment(next);
+		},
+		function(next) {
+
+			// Create directoy to store indexes
+			indexPath = path.join(self.archPath, self.platform || self.arch, 'index');
+			fs.exists(indexPath, function(exists) {
+				if (!exists) {
+					fs.mkdir(indexPath, next);
+					return;
+				}
+
+				// Cache package indexes
+				self.emit('configure', 'set_indexes');
+				rootfs.setPackageIndexes(indexPath, function() {
+					next();
+				});
+			});
+
 		},
 		function(next) {
 
@@ -334,20 +353,6 @@ Arch.prototype.initRootfs = function(rootfs, callback) {
 					next();
 				});
 			});
-		},
-		function(next) {
-
-			// Create directoy to store indexes
-			indexPath = path.join(self.archPath, self.platform || self.arch, 'index');
-			fs.exists(indexPath, function(exists) {
-				if (!exists) {
-					fs.mkdir(indexPath, next);
-					return;
-				}
-
-				next();
-			});
-
 		},
 		function(next) {
 

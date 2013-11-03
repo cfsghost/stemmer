@@ -388,6 +388,47 @@ Rootfs.prototype.clearEnvironment = function(callback) {
 	});
 };
 
+Rootfs.prototype.setPackageIndexes = function(indexPath, callback) {
+	var self = this;
+
+	var rootfsExecuter = new RootfsExecuter(self);
+
+	var outputPath = path.join(self.targetPath, 'var', 'lib', 'apt', 'lists');
+
+	fs.readdir(indexPath, function(err, files) {
+		if (err) {
+			callback(err);
+			return;
+		}
+
+		if (files.length == 0) {
+			callback();
+			return;
+		}
+
+		var filelist = [];
+
+		// Finding index files
+		async.each(files, function(filename, next) {
+
+			filelist.push(path.join(indexPath, filename));
+
+			next();
+
+		}, function() {
+
+			// Copying index files
+			var args = [ '-a' ].concat(filelist, [ outputPath ]);
+			var cmd = child_process.spawn('cp', args);
+			cmd.on('close', function() {
+
+				callback(null);
+			});
+		})
+	});
+
+};
+
 Rootfs.prototype.fetchPackageIndexes = function(outputPath, callback) {
 	var self = this;
 
@@ -397,7 +438,12 @@ Rootfs.prototype.fetchPackageIndexes = function(outputPath, callback) {
 
 	fs.readdir(sourceDirPath, function(err, files) {
 		if (err) {
-			next(err);
+			callback(err);
+			return;
+		}
+
+		if (files.length == 0) {
+			callback();
 			return;
 		}
 
