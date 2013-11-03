@@ -1,5 +1,7 @@
 "use strict";
 
+var util = require('util');
+var events = require('events');
 var fs = require('fs');
 var path = require('path');
 var child_process = require('child_process');
@@ -15,6 +17,8 @@ var Rootfs = module.exports = function() {
 	self.initialDirPath = null;
 	self.environmentReady = false;
 };
+
+util.inherits(Rootfs, events.EventEmitter);
 
 Rootfs.prototype.clone = function(targetPath, callback) {
 	var self = this;
@@ -234,7 +238,7 @@ Rootfs.prototype.prepareEnvironment = function(callback) {
 			// Setting local repository
 			var repo = 'deb file:/.stemmer/packages ./';
 
-			fs.writeFile(path.join(self.targetPath, 'etc', 'apt', 'sources.list.d', '0stemmer'), repo, function(err) {
+			fs.writeFile(path.join(self.targetPath, 'etc', 'apt', 'sources.list.d', 'stemmer'), repo, function(err) {
 				next(err);
 			});
 
@@ -329,6 +333,8 @@ Rootfs.prototype.clearEnvironment = function(callback) {
 
 		function(next) {
 
+			self.emit('clear', 'packages');
+
 			// Clear APT stuffs
 			var rootfsExecuter = new RootfsExecuter(self);
 			rootfsExecuter.addCommand('rm -fr /var/lib/apt/lists/*');
@@ -342,6 +348,8 @@ Rootfs.prototype.clearEnvironment = function(callback) {
 		},
 		function(next) {
 
+			self.emit('clear', 'apt_settings');
+
 			fs.unlink(path.join(self.targetPath, 'etc', 'apt', 'apt.conf.d', '01stemmer'), next);
 		},
 		function(next) {
@@ -349,6 +357,8 @@ Rootfs.prototype.clearEnvironment = function(callback) {
 			fs.unlink(path.join(self.targetPath, 'etc', 'apt', 'sources.list.d', 'stemmer'), next);
 		},
 		function(next) {
+
+			self.emit('clear', 'initial_directory');
 
 			var cmd = child_process.spawn('rm', [
 				'-fr',
@@ -362,9 +372,13 @@ Rootfs.prototype.clearEnvironment = function(callback) {
 		},
 		function(next) {
 
+			self.emit('clear', 'emulator');
+
 			fs.unlink(path.join(self.targetPath, 'usr', 'bin', 'qemu-arm-static'), next);
 		},
 		function(next) {
+
+			self.emit('clear', 'dns_settings');
 
 			fs.unlink(path.join(self.targetPath, 'etc', 'resolv.conf'), next);
 		}
@@ -390,14 +404,14 @@ Rootfs.prototype.fetchPackageIndexes = function(outputPath, callback) {
 		var filelist = [];
 
 		// Finding index files
-		async.eachSeries(files, function(filename, next) {
+		async.each(files, function(filename, next) {
 
 			if (filename.lastIndexOf('_Packages') > 0 ||
 				filename.lastIndexOf('_Translation-en') > 0 ||
 				filename.lastIndexOf('_InRelease') > 0 ||
 				filename.lastIndexOf('_Release') > 0) {
 
-				filelist.push(filename);
+				filelist.push(path.join(sourceDirPath, filename));
 			}
 
 			next();
@@ -459,7 +473,7 @@ Rootfs.prototype.installPackages = function(packages, opts, callback) {
 	var rootfsExecuter = new RootfsExecuter(self);
 
 	rootfsExecuter.addCommand('apt-get update');
-	rootfsExecuter.addCommand('apt-get install -f --no-install-recommends -q --force-yes -y --fix-missing ' + pkgs.join(' '))
+	rootfsExecuter.addCommand('apt-get install -f --no-install-recommends -q --force-yes -y ' + pkgs.join(' '))
 	rootfsExecuter.run({}, function() {
 		callback(null);
 	});

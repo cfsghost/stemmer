@@ -1,0 +1,66 @@
+#!/usr/bin/env node
+
+var net = require('net');
+
+var socketPath = '/tmp/stemd.socket';
+
+if (process.argv[2] == '--daemon') {
+
+	var unixSocket = net.connect({ path: socketPath });
+
+	var StemDaemon = require('../lib/stemd');
+	var stemDaemon = new StemDaemon();
+	stemDaemon.init(function(err) {
+		if (err)
+			unixSocket.write('error');
+		else
+			unixSocket.write('ready');
+
+		unixSocket.end();
+		unixSocket.unref();
+	});
+
+} else {
+
+	var fs = require('fs');
+
+	var child = null;
+
+	function _exit(ret) {
+		unixSocket.close();
+		process.exit(ret);
+	}
+
+	// Initializing unix socket server
+	var unixSocket = net.createServer(function(client) {
+
+		var ret = 0;
+		client.on('data', function(state) {
+			if (state == 'ready')
+				return;
+
+			ret = 1;
+		});
+
+		client.on('end', function() {
+			_exit(ret);
+		});
+	});
+
+	unixSocket.listen(socketPath, function() {
+
+		var child_process = require('child_process');
+
+		child = child_process.spawn(__filename, [ '--daemon' ], {
+			stdio: [ 'ignore', 'ignore', 'ignore' ],
+			detached: true,
+			cwd: process.cwd,
+			env: process.env
+		});
+		child.unref();
+
+		child.on('close', function(code) {
+			_exit(1);
+		});
+	});
+}

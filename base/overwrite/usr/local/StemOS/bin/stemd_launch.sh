@@ -6,4 +6,7 @@ dbus-launch --auto-syntax > $DBUSROOT/dbus-launch.info
 source $DBUSROOT/dbus-launch.info
 
 ## run the stem daemon
-/usr/local/lib/node_modules/stem-daemon/bin/stem
+export NODE_PATH=/usr/local/lib/node_modules
+export PATH=$PATH:/usr/local/bin
+node /usr/local/lib/node_modules/stem-daemon/bin/stemd
+

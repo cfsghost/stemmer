@@ -9,8 +9,12 @@ var Project = require('../lib/project');
 
 var project = new Project();
 
-project.on('Build', function(job) {
-	console.log(job);
+project.on('build', function(state, task) {
+	if (task) {
+		console.log(state + ' ' + task);
+	} else {
+		console.log(state);
+	}
 });
 
 project.load(process.argv[2], function(err) {

@@ -2,8 +2,7 @@
 
 var fs = require('fs');
 var path = require('path');
-
-var Array = require('node-array');
+var async = require('async');
 
 var PluginManager = module.exports = function() {
 	var self = this;
@@ -51,11 +50,9 @@ PluginManager.prototype.loadAll = function(pluginDir, callback) {
 		/* Getting file list in specific directory */
 		fs.readdir(pluginDir, function(err, files) {
 
-			files.forEachAsync(function(pluginFile, index, arr, next) {
+			async.each(files, function(pluginFile, next) {
 
 				self.load(path.join(pluginDir, pluginFile), next);
-
-				return true;
 
 			}, callback);
 
@@ -66,18 +63,17 @@ PluginManager.prototype.loadAll = function(pluginDir, callback) {
 PluginManager.prototype.scanAll = function(complete) {
 	var self = this;
 
-	self.pluginDirs.forEachAsync(function(pluginDir, index, dirs, next) {
+	async.each(self.pluginDirs, function(pluginDir, next) {
 
 		self.loadAll(pluginDir, next);
 
-		return true;
 	}, complete);
 };
 
 PluginManager.prototype.runAll = function(complete) {
 	var self = this;
 
-	Object.keys(self.pluginSymbols).forEachAsync(function(symbol, index, symbols, next) {
+	async.each(Object.keys(self.pluginSymbols), function(symbol, next) {
 		var PluginClass = self.pluginSymbols[symbol].prototype;
 
 		// Create plugin instance

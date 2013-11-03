@@ -121,6 +121,8 @@ Project.prototype.build = function(opts, callback) {
 	async.series([
 		function(next) {
 
+			self.emit('build', 'new_job');
+
 			// Create a job
 			job = new Job();
 			job.create(function() {
@@ -134,7 +136,7 @@ Project.prototype.build = function(opts, callback) {
 			// This architecture depends on another one
 			if (self.refPlatform) {
 
-				self.emit('Build', 'init_platform');
+				self.emit('build', 'make_platform');
 
 				// Based on referenced platform
 				self.refPlatform.getRootfs({ makeIfDoesNotExists: true }, function(err, refRootfs) {
@@ -155,6 +157,31 @@ Project.prototype.build = function(opts, callback) {
 			}
 
 			next();
+
+		},
+		function(next) {
+
+			if (!curRootfs) {
+				next(new Error('No usable rootfs'));
+				return;
+			}
+
+			self.emit('build', 'preparing');
+
+			curRootfs.prepareEnvironment(next);
+		},
+		function(next) {
+
+			self.emit('build', 'configure_platform', 'overwrite');
+
+			// Apply settings of base
+			self.refPlatform.base.applyOverwrite(curRootfs, function() {
+
+				self.emit('build', 'configure_platform', 'services');
+
+				self.refPlatform.base.initiateServices(curRootfs, next);
+			});
+
 		},
 		function(next) {
 
@@ -170,16 +197,7 @@ Project.prototype.build = function(opts, callback) {
 		},
 		function(next) {
 
-			if (!curRootfs) {
-				next(new Error('No usable rootfs'));
-				return;
-			}
-
-			curRootfs.prepareEnvironment(next);
-		},
-		function(next) {
-
-			self.emit('Build', 'apply_recipes');
+			self.emit('build', 'apply_recipes');
 
 			if (!self.settings.recipes) {
 				next();
@@ -190,6 +208,8 @@ Project.prototype.build = function(opts, callback) {
 			var targetPkgDir = path.join(curRootfs.initialDirPath, 'packages');
 
 			async.eachSeries(Object.keys(self.settings.recipes), function(recipeName, cb) {
+
+				self.emit('build', 'apply_recipes', recipeName);
 
 				var recipe = new Recipe(recipeName);
 				recipe.init({ arch: self.arch }, function(err) {
@@ -250,7 +270,7 @@ Project.prototype.build = function(opts, callback) {
 		},
 		function(next) {
 
-			self.emit('Build', 'apply_packages');
+			self.emit('build', 'apply_packages');
 
 			// Apply packages in initial directory
 			curRootfs.applyPackages({}, function(err) {
@@ -271,7 +291,7 @@ Project.prototype.build = function(opts, callback) {
 				return;
 			}
 
-			self.emit('Build', 'install_packages');
+			self.emit('build', 'install_packages');
 
 			// Install packages in config file
 			curRootfs.installPackages(packages, {}, function() {
@@ -290,19 +310,19 @@ Project.prototype.build = function(opts, callback) {
 		},
 		function(next) {
 
+			self.emit('build', 'clear');
+
 			curRootfs.clearEnvironment(next);
 		},
 		function(next) {
 
-			self.emit('Build', 'overwrite');
+			self.emit('build', 'overwrite');
 			
 			// Overwriting specific files from project source
 			var overwritePath = path.join(self.projectBasePath, self.projectName, 'overwrite');
 			curRootfs.applyOverwrite(overwritePath, next);
 		},
 		function(next) {
-
-			self.emit('Build', 'save');
 
 			// Remove old rootfs if it exists
 			self.getRootfs({}, function(err, rootfs) {
@@ -323,6 +343,8 @@ Project.prototype.build = function(opts, callback) {
 		},
 		function(next) {
 
+			self.emit('build', 'save');
+
 			// Create a new directory for rootfs
 			var cmd = child_process.spawn('mkdir', [
 				'-p',
@@ -339,6 +361,9 @@ Project.prototype.build = function(opts, callback) {
 	], function(err) {
 
 		job.release(function() {
+
+			self.emit('build', 'complete');
+
 			callback(err, curRootfs || null);
 		});
 	});

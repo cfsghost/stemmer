@@ -168,6 +168,8 @@ Arch.prototype.makeRootfs = function(callback) {
 
 		function(next) {
 
+			self.emit('make', 'init_job');
+
 			// Create a job
 			job = new Job();
 			job.create(function() {
@@ -175,6 +177,8 @@ Arch.prototype.makeRootfs = function(callback) {
 			});
 		},
 		function(next) {
+
+			self.emit('make', 'rootfs');
 
 			var targetPath = path.join(job.jobPath, 'rootfs');
 
@@ -232,6 +236,8 @@ Arch.prototype.makeRootfs = function(callback) {
 				return;
 			}
 
+			self.emit('make', 'activate');
+
 			// Activate rootfs
 			var activator = new RootfsActivator(archRootfs);
 			activator.configurePackages = true;
@@ -241,6 +247,8 @@ Arch.prototype.makeRootfs = function(callback) {
 			});
 		},
 		function(next) {
+
+			self.emit('make', 'configure');
 
 			// Initializing rootfs for specific platform
 			self.initRootfs(archRootfs, function() {
@@ -268,6 +276,8 @@ Arch.prototype.makeRootfs = function(callback) {
 		},
 		function(next) {
 
+			self.emit('make', 'save');
+
 			// Create a new directory for rootfs
 			var cmd = child_process.spawn('mkdir', [
 				'-p',
@@ -285,6 +295,8 @@ Arch.prototype.makeRootfs = function(callback) {
 	], function(err) {
 
 		job.release(function() {
+
+			self.emit('make', 'complete');
 			callback(err, archRootfs || null);
 		});
 	});
@@ -293,17 +305,16 @@ Arch.prototype.makeRootfs = function(callback) {
 Arch.prototype.initRootfs = function(rootfs, callback) {
 	var self = this;
 
-	self.emit('InitRootfs', 'start');
 	var indexPath = null;
 	async.series([
 		function(next) {
 
-			self.emit('InitRootfs', 'preparing');
+			self.emit('configure', 'preparing');
 			rootfs.prepareEnvironment(next);
 		},
 		function(next) {
 
-			self.emit('InitRootfs', 'installing_packages');
+			self.emit('configure', 'install_packages');
 
 			// Installing packages
 			self.getPackages(function(packages) {
@@ -314,9 +325,9 @@ Arch.prototype.initRootfs = function(rootfs, callback) {
 
 				// Preparing package list
 				var pkgs = {};
-				for (var name in packages) {
+				for (var index in packages) {
 					// No specific version
-					pkgs[name] = '*';
+					pkgs[packages[index]] = '*';
 				}
 
 				rootfs.installPackages(pkgs, {}, function() {
@@ -340,7 +351,7 @@ Arch.prototype.initRootfs = function(rootfs, callback) {
 		},
 		function(next) {
 
-			self.emit('InitRootfs', 'making_packages_index');
+			self.emit('configure', 'make_cache');
 
 			// Cache package indexes
 			rootfs.fetchPackageIndexes(indexPath, function() {
@@ -349,25 +360,25 @@ Arch.prototype.initRootfs = function(rootfs, callback) {
 		},
 		function(next) {
 
-			self.emit('InitRootfs', 'arch_overwrite');
+			self.emit('configure', 'overwrite');
 
 			// Overwriting specific files from arch directory
 			var overwritePath = path.join(self.archPath, self.platform || self.arch, 'overwrite');
 			rootfs.applyOverwrite(overwritePath, next);
-		},
-		function(next) {
-
-			// Apply settings of base
-			self.base.applyOverwrite(rootfs, function() {
-				self.base.initiateServices(rootfs, next);
-			});
-
 		}
 
 	], function(err) {
 
+		self.emit('configure', 'clear');
+
+		rootfs.on('clear', function(state) {
+			self.emit('configure', 'clear', state);
+		});
+
 		// Clear rootfs
 		rootfs.clearEnvironment(function() {
+
+			self.emit('configure', 'complete');
 			callback(err);
 		});
 
