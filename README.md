@@ -14,3 +14,14 @@ Install Node.js modules via NPM:
 
 	cd bin
 	npm install async node-uuid
+
+Usage
+-
+
+Build a rootfs for specific project:
+
+	sudo ./bin/build [Project Name]
+
+Build a rootfs for specific platform or architecture:
+
+	sudo ./bin/mkrootfs [Platform]
