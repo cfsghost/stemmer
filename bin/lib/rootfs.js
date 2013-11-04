@@ -238,7 +238,7 @@ Rootfs.prototype.prepareEnvironment = function(callback) {
 			// Setting local repository
 			var repo = 'deb file:/.stemmer/packages ./';
 
-			fs.writeFile(path.join(self.targetPath, 'etc', 'apt', 'sources.list.d', 'stemmer'), repo, function(err) {
+			fs.writeFile(path.join(self.targetPath, 'etc', 'apt', 'sources.list.d', 'stemmer.list'), repo, function(err) {
 				next(err);
 			});
 
@@ -354,7 +354,7 @@ Rootfs.prototype.clearEnvironment = function(callback) {
 		},
 		function(next) {
 
-			fs.unlink(path.join(self.targetPath, 'etc', 'apt', 'sources.list.d', 'stemmer'), next);
+			fs.unlink(path.join(self.targetPath, 'etc', 'apt', 'sources.list.d', 'stemmer.list'), next);
 		},
 		function(next) {
 
@@ -532,9 +532,11 @@ Rootfs.prototype.applyPackages = function(opts, callback) {
 	// TODO: check Packages.gz and remove it if it doesn't exist
 	var failed = false;
 	var dpkg = child_process.spawn('dpkg-scanpackages', [
-		path.join(self.targetPath, '.stemmer', 'packages'),
+		'.',
 		'/dev/null'
-	]);
+	], {
+		cwd: path.join(self.targetPath, '.stemmer', 'packages')
+	});
 
 	var gzip = child_process.spawn('gzip', [
 		'-9c'

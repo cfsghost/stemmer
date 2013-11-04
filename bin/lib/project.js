@@ -118,6 +118,7 @@ Project.prototype.build = function(opts, callback) {
 	var buildPath = path.join(__dirname, '..', '..', 'build', self.projectName, 'rootfs');
 	var packages = {};
 	var recipes = {};
+	var indexPath = null;
 	async.series([
 		function(next) {
 
@@ -169,6 +170,24 @@ Project.prototype.build = function(opts, callback) {
 			self.emit('build', 'preparing');
 
 			curRootfs.prepareEnvironment(next);
+		},
+		function(next) {
+
+			// Create directoy to store indexes
+			indexPath = path.join(self.refPlatform.archPath, self.refPlatform.platform || self.refPlatform.arch, 'index');
+			fs.exists(indexPath, function(exists) {
+				if (!exists) {
+					fs.mkdir(indexPath, next);
+					return;
+				}
+
+				// Cache package indexes
+				self.emit('configure', 'set_indexes');
+				curRootfs.setPackageIndexes(indexPath, function() {
+					next();
+				});
+			});
+
 		},
 		function(next) {
 
@@ -306,6 +325,15 @@ Project.prototype.build = function(opts, callback) {
 				}, function() {
 					next();
 				});
+			});
+		},
+		function(next) {
+
+			self.emit('build', 'make_cache');
+
+			// Cache package indexes
+			curRootfs.fetchPackageIndexes(indexPath, function() {
+				next();
 			});
 		},
 		function(next) {
