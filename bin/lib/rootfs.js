@@ -147,7 +147,8 @@ Rootfs.prototype.applyOverwrite = function(sourcePath, callback) {
 	fs.exists(sourcePath, function(exists) {
 
 		if (!exists) {
-			callback(new Error('Source for overwriting doesn\'t exist'));
+			// Target director doesn't exist
+			callback(null);
 			return;
 		}
 
