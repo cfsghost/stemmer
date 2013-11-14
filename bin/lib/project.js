@@ -204,13 +204,13 @@ Project.prototype.build = function(opts, callback) {
 		},
 		function(next) {
 
-			if (!self.settings.hostname) {
+			if (!self.settings.settings.hostname) {
 				next();
 				return;
 			}
 
 			// Write to hostname configuration file
-			fs.writeFile(path.join(curRootfs.targetPath, 'etc', 'hostname'), self.settings.hostname, function(err) {
+			fs.writeFile(path.join(curRootfs.targetPath, 'etc', 'hostname'), self.settings.settings.hostname, function(err) {
 				next(err);
 			});
 		},
