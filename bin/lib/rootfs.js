@@ -191,11 +191,6 @@ Rootfs.prototype.prepareEnvironment = function(callback) {
 		return;
 	}
 
-	if (self.arch != 'armhf') {
-		process.nextTick(callback);
-		return;
-	}
-
 	async.series([
 
 		function(next) {
@@ -213,16 +208,22 @@ Rootfs.prototype.prepareEnvironment = function(callback) {
 		},
 		function(next) {
 
-			// Preparing emulator
-			var cmd = child_process.spawn('cp', [
-				'-a',
-				path.join('/', 'usr', 'bin', 'qemu-arm-static'),
-				path.join(self.targetPath, 'usr', 'bin')
-			]);
+			if (self.arch == 'armhf') {
+				// Preparing emulator
+				var cmd = child_process.spawn('cp', [
+					'-a',
+					path.join('/', 'usr', 'bin', 'qemu-arm-static'),
+					path.join(self.targetPath, 'usr', 'bin')
+				]);
 
-			cmd.on('close', function() {
-				next();
-			});
+				cmd.on('close', function() {
+					next();
+				});
+
+				return;
+			}
+
+			next();
 		},
 		function(next) {
 

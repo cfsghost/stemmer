@@ -1,4 +1,5 @@
 {
+	"arch": "i386",
 	"repo": {
 		"General": {
 			"arch": "i386",
@@ -9,26 +10,14 @@
 			"aptsources": [ "Grip", "Debian" ]
 		},
 		"Grip": {
-			"packages": [
-				"fakeroot",
-				"fakechroot",
-				"ntpdate",
-				"net-tools",
-				"isc-dhcp-client",
-				"ifupdown",
-				"parted",
-				"policykit-1",
-				"dbus",
-				"udisks2"
-			],
 			"source": "http://www.emdebian.org/grip",
 			"keyring": "emdebian-archive-keyring",
 			"suite": "sid-grip"
 		},
 		"Debian": {
-			"packages": [ "fonts-droid" ],
 			"source": "http://ftp.us.debian.org/debian",
 			"keyring": "debian-archive-keyring",
+			"components": "main contrib non-free",
 			"suite": "sid"
 		}
 	}
