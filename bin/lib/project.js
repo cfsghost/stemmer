@@ -352,6 +352,18 @@ Project.prototype.build = function(opts, callback) {
 		},
 		function(next) {
 
+			if (!self.settings.services) {
+				next();
+				return;
+			}
+
+			self.emit('build', 'initiate_services');
+			
+			// register services
+			curRootfs.registerServices(self.settings.services, {}, next);
+		},
+		function(next) {
+
 			// Remove old rootfs if it exists
 			self.getRootfs({}, function(err, rootfs) {
 
