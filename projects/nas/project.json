@@ -6,7 +6,8 @@
 		"hostname": "StemNAS"
 	},
 	"network": {
-		"eth0": {
+		"default": {
+			"inet": "eth0",
 			"method": "dhcp"
 		}
 	},
