@@ -83,8 +83,8 @@ RootfsActivator.prototype.activate = function(callback) {
 
 			// Starting to activate
 			self.rootfsExecuter.rootfs = self.rootfs;
-			self.rootfsExecuter.run({}, function() {
-				next();
+			self.rootfsExecuter.run({}, function(err) {
+				next(err);
 			});
 		},
 		function(next) {
@@ -96,8 +96,8 @@ RootfsActivator.prototype.activate = function(callback) {
 				}
 			], next);
 		}
-	], function() {
+	], function(err) {
 
-		callback();
+		callback(err);
 	});
 };

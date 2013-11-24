@@ -41,6 +41,10 @@ RootfsExecuter.prototype.run = function(opts, callback) {
 
 			// Create script for activating
 			fs.writeFile(scriptPath, script.join('\n'), function(err) {
+				if (err) {
+					next(err);
+					return;
+				}
 
 				fs.chmod(scriptPath, '755', function() {
 					next();
@@ -65,7 +69,7 @@ RootfsExecuter.prototype.run = function(opts, callback) {
 				});
 			});
 		}
-	], function() {
-		callback();
+	], function(err) {
+		callback(err);
 	});
 };

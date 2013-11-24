@@ -242,8 +242,8 @@ Arch.prototype.makeRootfs = function(callback) {
 			var activator = new RootfsActivator(archRootfs);
 			activator.configurePackages = true;
 			activator.resetRootPassword = true;
-			activator.activate(function() {
-				next();
+			activator.activate(function(err) {
+				next(err);
 			});
 		},
 		function(next) {
@@ -383,7 +383,12 @@ Arch.prototype.initRootfs = function(rootfs, callback) {
 		// Clear rootfs
 		rootfs.clearEnvironment(function() {
 
-			self.emit('configure', 'complete');
+			if (err) {
+				self.emit('configure', 'fail');
+			} else {
+				self.emit('configure', 'complete');
+			}
+
 			callback(err);
 		});
 
