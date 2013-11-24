@@ -119,6 +119,7 @@ Project.prototype.build = function(opts, callback) {
 	var packages = {};
 	var recipes = {};
 	var indexPath = null;
+	var stemConfigDir = null;
 	async.series([
 		function(next) {
 
@@ -170,6 +171,13 @@ Project.prototype.build = function(opts, callback) {
 			self.emit('build', 'preparing');
 
 			curRootfs.prepareEnvironment(next);
+
+		},
+		function(next) {
+
+			// Prepare configuration directory
+			stemConfigDir = path.join(curRootfs.targetPath, 'etc', 'Stem');
+			fs.mkdir(stemConfigDir, next);
 		},
 		function(next) {
 
@@ -212,6 +220,21 @@ Project.prototype.build = function(opts, callback) {
 			// Write to hostname configuration file
 			fs.writeFile(path.join(curRootfs.targetPath, 'etc', 'hostname'), self.settings.settings.hostname, function(err) {
 				next(err);
+			});
+		},
+		function(next) {
+
+			if (!self.settings.network) {
+				next();
+				return;
+			}
+
+			// Setting connections
+			var networkConfigPath = path.join(stemConfigDir, 'network.json');
+
+			// Writing to configuration file
+			fs.writeFile(networkConfigPath, JSON.stringify(self.settings.network), function(err) {
+				next();
 			});
 		},
 		function(next) {

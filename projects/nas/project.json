@@ -6,9 +6,11 @@
 		"hostname": "StemNAS"
 	},
 	"network": {
-		"default": {
-			"inet": "eth0",
-			"method": "dhcp"
+		"connections": {
+			"default": {
+				"inet": "eth0",
+				"method": "dhcp"
+			}
 		}
 	},
 	"recipes": {
