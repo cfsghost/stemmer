@@ -361,12 +361,6 @@ Project.prototype.build = function(opts, callback) {
 		},
 		function(next) {
 
-			self.emit('build', 'clear');
-
-			curRootfs.clearEnvironment(next);
-		},
-		function(next) {
-
 			self.emit('build', 'overwrite');
 			
 			// Overwriting specific files from project source
@@ -384,6 +378,12 @@ Project.prototype.build = function(opts, callback) {
 			
 			// register services
 			curRootfs.registerServices(self.settings.services, {}, next);
+		},
+		function(next) {
+
+			self.emit('build', 'clear');
+
+			curRootfs.clearEnvironment(next);
 		},
 		function(next) {
 
