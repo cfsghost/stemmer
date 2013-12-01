@@ -7,7 +7,7 @@ var PluginManager = require('./plugin-manager');
 var StemDaemon = module.exports = function() {
 	var self = this;
 
-	self.pluginManager = new PluginManager();
+	self.pluginManager = new PluginManager(self);
 };
 
 util.inherits(StemDaemon, events.EventEmitter);
