@@ -19,6 +19,7 @@
 				"parted",
 				"policykit-1",
 				"dbus",
+				"dbus-x11",
 				"udisks2",
 				"connman"
 			],
