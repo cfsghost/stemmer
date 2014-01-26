@@ -21,7 +21,8 @@
 				"dbus",
 				"dbus-x11",
 				"udisks2",
-				"connman"
+				"connman",
+				"libgl1-mesa-dri"
 			],
 			"source": "http://www.emdebian.org/grip",
 			"keyring": "emdebian-archive-keyring",
