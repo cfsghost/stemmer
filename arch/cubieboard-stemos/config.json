@@ -33,7 +33,8 @@
 				"libgl1-mesa-dri",
 				"libqt5quick5",
 				"qtdeclarative5-qtquick2-plugin",
-				"qtdeclarative5-qtmultimedia-plugin"
+				"qtdeclarative5-qtmultimedia-plugin",
+				"qtdeclarative5-qtsensors-plugin"
 			],
 			"source": "http://ftp.us.debian.org/debian",
 			"keyring": "debian-archive-keyring",
