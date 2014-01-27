@@ -32,7 +32,8 @@
 				"fonts-droid",
 				"libgl1-mesa-dri",
 				"libqt5quick5",
-				"qtdeclarative5-qtquick2-plugin"
+				"qtdeclarative5-qtquick2-plugin",
+				"qtdeclarative5-qtmultimedia-plugin"
 			],
 			"source": "http://ftp.us.debian.org/debian",
 			"keyring": "debian-archive-keyring",
