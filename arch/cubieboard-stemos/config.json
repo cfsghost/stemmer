@@ -32,6 +32,7 @@
 				"fonts-droid",
 				"libgl1-mesa-dri",
 				"libqt5quick5",
+				"qt5-default",
 				"qtdeclarative5-qtquick2-plugin",
 				"qtdeclarative5-qtmultimedia-plugin",
 				"qtdeclarative5-qtsensors-plugin"
