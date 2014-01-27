@@ -21,15 +21,19 @@
 				"dbus",
 				"dbus-x11",
 				"udisks2",
-				"connman",
-				"libgl1-mesa-dri"
+				"connman"
 			],
 			"source": "http://www.emdebian.org/grip",
 			"keyring": "emdebian-archive-keyring",
 			"suite": "sid-grip"
 		},
 		"Debian": {
-			"packages": [ "fonts-droid" ],
+			"packages": [
+				"fonts-droid",
+				"libgl1-mesa-dri",
+				"libqt5quick5",
+				"qtdeclarative5-qtquick2-plugin"
+			],
 			"source": "http://ftp.us.debian.org/debian",
 			"keyring": "debian-archive-keyring",
 			"suite": "sid"
