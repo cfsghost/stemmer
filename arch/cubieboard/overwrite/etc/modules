@@ -1,13 +1,16 @@
-#GPIO
+# GPIO
 gpio_sunxi
 
-#For SATA Support
+# For SATA Support
 sw_ahci_platform
 
-#Display and GPU
+# Display and GPU
 lcd
 hdmi
 ump
 disp
 mali
 mali_drm
+
+# Sound
+sunxi_i2sdma
