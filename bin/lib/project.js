@@ -212,6 +212,11 @@ Project.prototype.build = function(opts, callback) {
 		},
 		function(next) {
 
+			if (!self.settings.settings) {
+				next();
+				return;
+			}
+
 			if (!self.settings.settings.hostname) {
 				next();
 				return;

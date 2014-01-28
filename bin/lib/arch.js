@@ -187,6 +187,10 @@ Arch.prototype.makeRootfs = function(callback) {
 
 				// Based on referenced platform
 				self.refPlatform.getRootfs({ makeIfDoesNotExists: true }, function(err, refRootfs) {
+					if (err) {
+						next(err);
+						return;
+					}
 
 					// Clone from job directory to another place for storing
 					refRootfs.clone(targetPath, function(err, rootfs) {
