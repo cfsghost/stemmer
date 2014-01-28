@@ -11,6 +11,7 @@
 		},
 		"Grip": {
 			"packages": [
+				"alsa-base",
 				"libudev0",
 				"ntpdate",
 				"net-tools",
