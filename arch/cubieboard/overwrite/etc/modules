@@ -11,6 +11,7 @@ ump
 disp
 mali
 mali_drm
+sunxi_cedar_mod
 
 # Sound
 sunxi_i2sdma
