@@ -141,6 +141,12 @@ Rootfs.prototype.remove = function(callback) {
 	});
 };
 
+Rootfs.prototype.disableRepository = function(name, callback) {
+	var self = this;
+
+	fs.unlink(path.join(self.targetPath, 'etc', 'apt', 'sources.list.d', name + '.list'), callback);
+};
+
 Rootfs.prototype.applyOverwrite = function(sourcePath, callback) {
 	var self = this;
 
@@ -272,6 +278,19 @@ Rootfs.prototype.prepareEnvironment = function(callback) {
 				function(_next) {
 
 					fs.mkdir(path.join(stemmerPath, 'packages'), function(err) {
+						if (err) {
+							_next(err);
+							return;
+						}
+
+						_next();
+
+					});
+				},
+				function(_next) {
+
+					// Generate package list for local repository
+					self.applyPackages({}, function(err) {
 						if (err) {
 							_next(err);
 							return;

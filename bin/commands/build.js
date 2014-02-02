@@ -5,16 +5,20 @@ if (process.argv.length < 3) {
 	process.exit();
 }
 
+var colors = require('colors');
 var Project = require('../lib/project');
 
 var project = new Project();
 
 project.on('build', function(state, task) {
-	if (task) {
-		console.log(state + ' ' + task);
-	} else {
-		console.log(state);
+
+	var message = [];
+
+	for (var index in arguments) {
+		message.push(arguments[index]);
 	}
+
+	console.log('[STEMMER] '.cyan + message.join(' '));
 });
 
 project.load(process.argv[2], function(err) {

@@ -11,8 +11,6 @@
 		},
 		"Grip": {
 			"packages": [
-				"alsa-base",
-				"libudev0",
 				"ntpdate",
 				"net-tools",
 				"isc-dhcp-client",
@@ -22,7 +20,8 @@
 				"dbus",
 				"dbus-x11",
 				"udisks2",
-				"connman"
+				"connman",
+				"alsa-base"
 			],
 			"source": "http://www.emdebian.org/grip",
 			"keyring": "emdebian-archive-keyring",
@@ -31,9 +30,20 @@
 		"Debian": {
 			"packages": [
 				"fonts-droid",
+				"xserver-xorg",
+				"xserver-xorg-input-all",
+				"xserver-xorg-video-fbdev",
+				"xserver-xorg-core",
+				"xinit",
+				"xterm",
 				"libgl1-mesa-dri",
+				"libqt5core5a",
 				"libqt5quick5",
-				"qt5-default",
+				"libqt5qml5",
+				"libqt5multimedia5",
+				"libqt5gui5",
+				"libqt5network5",
+				"libqt5dbus5",
 				"qtdeclarative5-qtquick2-plugin",
 				"qtdeclarative5-qtmultimedia-plugin",
 				"qtdeclarative5-qtsensors-plugin"

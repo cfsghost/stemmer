@@ -138,10 +138,12 @@ Project.prototype.build = function(opts, callback) {
 			// This architecture depends on another one
 			if (self.refPlatform) {
 
-				self.emit('build', 'make_platform');
+				self.emit('build', 'make_platform', 'selected_reference', self.refPlatform);
 
 				// Based on referenced platform
 				self.refPlatform.getRootfs({ makeIfDoesNotExists: true }, function(err, refRootfs) {
+
+					self.emit('build', 'make_platform', 'clone_reference');
 
 					// Clone
 					refRootfs.clone(targetPath, function(err, rootfs) {
@@ -150,10 +152,38 @@ Project.prototype.build = function(opts, callback) {
 							return;
 						}
 
+						self.emit('build', 'make_platform', 'complete');
+
 						curRootfs = rootfs;
 
 						next();
 					});
+				});
+
+				self.refPlatform.on('make', function() {
+					var args = [
+						'build',
+						'make_platform',
+						'get_reference',
+						self.refPlatform,
+						'make'
+					];
+
+					var newArgs = args.concat(Array.prototype.slice.call(arguments));
+					self.emit.apply(self, newArgs);
+				});
+
+				self.refPlatform.on('configure', function() {
+					var args = [
+						'build',
+						'make_platform',
+						'get_reference',
+						self.refPlatform,
+						'configure'
+					];
+
+					var newArgs = args.concat(Array.prototype.slice.call(arguments));
+					self.emit.apply(self, newArgs);
 				});
 				return;
 			}

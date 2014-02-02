@@ -227,9 +227,14 @@ Arch.prototype.makeRootfs = function(callback) {
 
 				// Starting to make a rootfs
 				strap.build(configPath, targetPath, function(err, rootfs) {
-					archRootfs = rootfs;
 
-					next();
+					// disable emdebian repository by default, to avoid breaking package dependencies.
+					rootfs.disableRepository('multistrap-grip', function() {
+
+						archRootfs = rootfs;
+
+						next();
+					});
 				});
 			});
 		},
