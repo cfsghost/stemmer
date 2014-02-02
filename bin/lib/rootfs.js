@@ -472,13 +472,15 @@ Rootfs.prototype.fetchPackageIndexes = function(outputPath, callback) {
 
 		// Finding index files
 		async.each(files, function(filename, next) {
+			if (/_Packages$/.test(filename) ||
+				/_Translation-en$/.test(filename) ||
+				/_InRelease$/.test(filename) ||
+				/_Sources$/.test(filename) ||
+				/_Release$/.test(filename)) {
 
-			if (filename.lastIndexOf('_Packages') > 0 ||
-				filename.lastIndexOf('_Translation-en') > 0 ||
-				filename.lastIndexOf('_InRelease') > 0 ||
-				filename.lastIndexOf('_Release') > 0) {
-
-				filelist.push(path.join(sourceDirPath, filename));
+				// Ignore stemmer local repos
+				if (filename != '_.stemmer_packages_._Packages')
+					filelist.push(path.join(sourceDirPath, filename));
 			}
 
 			next();
