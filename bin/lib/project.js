@@ -185,6 +185,7 @@ Project.prototype.build = function(opts, callback) {
 					var newArgs = args.concat(Array.prototype.slice.call(arguments));
 					self.emit.apply(self, newArgs);
 				});
+
 				return;
 			}
 

@@ -15,7 +15,11 @@ project.on('build', function(state, task) {
 	var message = [];
 
 	for (var index in arguments) {
-		message.push(arguments[index]);
+
+		if (arguments[index].platform)
+			message.push(arguments[index].platform);
+		else
+			message.push(arguments[index]);
 	}
 
 	console.log('[STEMMER] '.cyan + message.join(' '));

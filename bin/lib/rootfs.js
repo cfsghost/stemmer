@@ -141,7 +141,37 @@ Rootfs.prototype.remove = function(callback) {
 	});
 };
 
-Rootfs.prototype.disableRepository = function(name, callback) {
+Rootfs.prototype.addRepository = function(name, source, suite, components, keyring, callback) {
+	var self = this;
+
+	var sourceSet = [
+		'deb',
+		source,
+		suite,
+		components.join(' ')
+	];
+
+	fs.writeFile(path.join(self.targetPath, 'etc', 'apt', 'sources.list.d', name + '.list'), sourceSet.join(' ') + '\n', function(err) {
+		callback(err);
+	});
+};
+
+Rootfs.prototype.clearRepositories = function(callback) {
+	var self = this;
+
+	var repoPath = path.join(self.targetPath, 'etc', 'apt', 'sources.list.d');
+
+	fs.readdir(repoPath, function(err, files) {
+
+		async.each(files, function(filename, cb) {
+			fs.unlink(path.join(repoPath, filename), cb);
+		}, function() {
+			callback();
+		});
+	});
+};
+
+Rootfs.prototype.removeRepository = function(name, callback) {
 	var self = this;
 
 	fs.unlink(path.join(self.targetPath, 'etc', 'apt', 'sources.list.d', name + '.list'), callback);
@@ -443,7 +473,12 @@ Rootfs.prototype.setPackageIndexes = function(indexPath, callback) {
 			var cmd = child_process.spawn('cp', args);
 			cmd.on('close', function() {
 
-				callback(null);
+				// Update package index
+				var rootfsExecuter = new RootfsExecuter(self);
+				rootfsExecuter.addCommand('apt-get update');
+				rootfsExecuter.run({}, function() {
+					callback(null);
+				});
 			});
 		})
 	});
@@ -525,6 +560,7 @@ Rootfs.prototype.installPackages = function(packages, opts, callback) {
 
 	if (Object.keys(packages).length == 0) {
 		process.nextTick(function() {
+			console.log('Nothing');
 			callback(null);
 		});
 		return;
@@ -541,8 +577,12 @@ Rootfs.prototype.installPackages = function(packages, opts, callback) {
 
 	var rootfsExecuter = new RootfsExecuter(self);
 
-	rootfsExecuter.addCommand('apt-get update');
-	rootfsExecuter.addCommand('apt-get install -f --no-install-recommends -q --force-yes -y ' + pkgs.join(' '))
+	// Specify suite
+	if (opts.suite)
+		rootfsExecuter.addCommand('apt-get install -f --no-install-recommends -q --force-yes -y -t ' + opts.suite + ' ' + pkgs.join(' '));
+	else
+		rootfsExecuter.addCommand('apt-get install -f --no-install-recommends -q --force-yes -y ' + pkgs.join(' '));
+
 	rootfsExecuter.run({}, function() {
 		callback(null);
 	});

@@ -53,15 +53,10 @@ Strap.prototype.build = function(configPath, targetPath, callback) {
 		'-d',
 		targetPath
 	]);
-/*
-	ms.stdout.on('data', function(data) {
-		process.stdout.write(data.toString());
-	});
 
-	ms.stderr.on('data', function(data) {
-		process.stdout.write(data.toString());
-	});
-*/
+	ms.stdout.pipe(process.stdout);
+	ms.stderr.pipe(process.stderr);
+
 	ms.on('close', function() {
 		var rootfs = new Rootfs();
 		rootfs.arch = self.settings.General.arch;
