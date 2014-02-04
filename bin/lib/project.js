@@ -388,6 +388,24 @@ Project.prototype.build = function(opts, callback) {
 		},
 		function(next) {
 
+			if (!self.settings.users) {
+				next();
+				return;
+			}
+
+			if (Object.keys(self.settings.users).length == 0) {
+				next();
+				return;
+			}
+
+			// Add users
+			self.emit('build', 'create_users');
+			curRootfs.addUsers(self.settings.users, {}, function() {
+				next();
+			});
+		},
+		function(next) {
+
 			self.emit('build', 'make_cache');
 
 			// Cache package indexes

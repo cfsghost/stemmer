@@ -560,7 +560,6 @@ Rootfs.prototype.installPackages = function(packages, opts, callback) {
 
 	if (Object.keys(packages).length == 0) {
 		process.nextTick(function() {
-			console.log('Nothing');
 			callback(null);
 		});
 		return;
@@ -629,4 +628,35 @@ Rootfs.prototype.applyPackages = function(opts, callback) {
 			callback();
 	});
 
+};
+
+Rootfs.prototype.addUsers = function(users, opts, callback) {
+	var self = this;
+
+	if (Object.keys(users).length == 0) {
+		process.nextTick(function() {
+			callback(null);
+		});
+		return;
+	}
+
+	var rootfsExecuter = new RootfsExecuter(self);
+
+	for (var username in users) {
+		rootfsExecuter.addCommand('useradd ' + username);
+
+		if (users[username].password) {
+			if (users[username].password != '') {
+				rootfsExecuter.addCommand('echo -e \"' + users[username].password + '\n' + users[username].password + '\" | passwd ' + username);
+				continue;
+			}
+		}
+
+		// Do not set password
+		rootfsExecuter.addCommand('passwd -d ' + username);
+	}
+
+	rootfsExecuter.run({}, function() {
+		callback(null);
+	});
 };
