@@ -265,6 +265,7 @@ Arch.prototype.makeRootfs = function(callback) {
 			activator.configurePackages = true;
 			activator.resetRootPassword = true;
 			activator.activate(function(err) {
+
 				next(err);
 			});
 		},

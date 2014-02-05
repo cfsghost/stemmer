@@ -174,7 +174,9 @@ Rootfs.prototype.clearRepositories = function(callback) {
 Rootfs.prototype.removeRepository = function(name, callback) {
 	var self = this;
 
-	fs.unlink(path.join(self.targetPath, 'etc', 'apt', 'sources.list.d', name + '.list'), callback);
+	fs.unlink(path.join(self.targetPath, 'etc', 'apt', 'sources.list.d', name + '.list'), function() {
+		callback();
+	});
 };
 
 Rootfs.prototype.applyOverwrite = function(sourcePath, callback) {
