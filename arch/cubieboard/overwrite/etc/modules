@@ -14,7 +14,9 @@ mali_drm
 sunxi_cedar_mod
 
 # Sound
+sndi2s
 sunxi-i2s
+sunxi-sndi2s
 sunxi_i2sdma
 
 # IR
