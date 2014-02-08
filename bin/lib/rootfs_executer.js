@@ -32,6 +32,15 @@ RootfsExecuter.prototype.addCommand = function(command) {
 RootfsExecuter.prototype.run = function(opts, callback) {
 	var self = this;
 
+	// No command needed to be executed
+	if (self.commands.length == 0) {
+		setImmediate(function() {
+			callback();
+		});
+
+		return;
+	}
+
 	var scriptPath = path.join(self.rootfs.targetPath, 'rootfs_executer.sh');
 
 	async.series([
