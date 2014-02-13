@@ -647,7 +647,7 @@ Rootfs.prototype.addUsers = function(users, opts, callback) {
 	for (var username in users) {
 
 		if (username != 'root')
-			rootfsExecuter.addCommand('useradd ' + username);
+			rootfsExecuter.addCommand('useradd -k ' + username);
 		else {
 			// Reset root password
 			rootfsExecuter.addCommand('passwd -d ' + username);
