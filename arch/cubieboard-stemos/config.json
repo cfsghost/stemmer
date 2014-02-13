@@ -47,7 +47,8 @@
 				"libqt5multimedia5-plugins",
 				"qtdeclarative5-qtquick2-plugin",
 				"qtdeclarative5-qtmultimedia-plugin",
-				"qtdeclarative5-qtsensors-plugin"
+				"qtdeclarative5-qtsensors-plugin",
+				"qml"
 			],
 			"source": "http://ftp.us.debian.org/debian",
 			"keyring": "debian-archive-keyring",
