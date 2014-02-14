@@ -6,10 +6,10 @@
 			"cleanup": true,
 			"noauth": true,
 			"unpack": true,
-			"debootstrap": [ "Grip", "Debian" ],
-			"aptsources": [ "Grip", "Debian" ]
+			"debootstrap": [ "Debian" ],
+			"aptsources": [ "Debian" ]
 		},
-		"Grip": {
+		"Debian": {
 			"packages": [
 				"ntpdate",
 				"net-tools",
@@ -21,14 +21,7 @@
 				"dbus-x11",
 				"udisks2",
 				"connman",
-				"alsa-base"
-			],
-			"source": "http://www.emdebian.org/grip",
-			"keyring": "emdebian-archive-keyring",
-			"suite": "sid-grip"
-		},
-		"Debian": {
-			"packages": [
+				"alsa-base",
 				"fonts-droid",
 				"xserver-xorg",
 				"xserver-xorg-input-all",
@@ -50,7 +43,7 @@
 				"qtdeclarative5-qtsensors-plugin",
 				"qml"
 			],
-			"source": "http://ftp.us.debian.org/debian",
+			"source": "http://ftp.tw.debian.org/debian",
 			"keyring": "debian-archive-keyring",
 			"suite": "sid"
 		},
