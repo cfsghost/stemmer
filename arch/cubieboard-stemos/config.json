@@ -17,6 +17,7 @@
 				"ifupdown",
 				"parted",
 				"policykit-1",
+				"pulseaudio",
 				"dbus",
 				"dbus-x11",
 				"udisks2",
@@ -39,6 +40,7 @@
 				"libqt5multimedia5",
 				"libqt5multimedia5-plugins",
 				"qtdeclarative5-qtquick2-plugin",
+				"qtdeclarative5-window-plugin",
 				"qtdeclarative5-qtmultimedia-plugin",
 				"qtdeclarative5-qtsensors-plugin",
 				"qml"
