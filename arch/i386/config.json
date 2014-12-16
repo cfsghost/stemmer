@@ -6,13 +6,8 @@
 			"cleanup": true,
 			"noauth": true,
 			"unpack": true,
-			"debootstrap": [ "Grip", "Debian" ],
-			"aptsources": [ "Grip", "Debian" ]
-		},
-		"Grip": {
-			"source": "http://www.emdebian.org/grip",
-			"keyring": "emdebian-archive-keyring",
-			"suite": "sid-grip"
+			"debootstrap": [ "Debian" ],
+			"aptsources": [ "Debian" ]
 		},
 		"Debian": {
 			"source": "http://ftp.us.debian.org/debian",

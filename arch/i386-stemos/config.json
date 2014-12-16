@@ -5,11 +5,12 @@
 			"cleanup": true,
 			"noauth": true,
 			"unpack": true,
-			"debootstrap": [ "Grip", "Debian" ],
-			"aptsources": [ "Grip", "Debian" ]
+			"debootstrap": [ "Debian" ],
+			"aptsources": [ "Debian" ]
 		},
-		"Grip": {
+		"Debian": {
 			"packages": [
+				"fonts-droid",
 				"ntpdate",
 				"net-tools",
 				"isc-dhcp-client",
@@ -20,12 +21,6 @@
 				"udisks2",
 				"connman"
 			],
-			"source": "http://www.emdebian.org/grip",
-			"keyring": "emdebian-archive-keyring",
-			"suite": "sid-grip"
-		},
-		"Debian": {
-			"packages": [ "fonts-droid" ],
 			"source": "http://ftp.us.debian.org/debian",
 			"keyring": "debian-archive-keyring",
 			"suite": "sid"
