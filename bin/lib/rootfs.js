@@ -141,6 +141,44 @@ Rootfs.prototype.remove = function(callback) {
 	});
 };
 
+Rootfs.prototype.addRepository = function(name, source, suite, components, keyring, callback) {
+	var self = this;
+
+	var sourceSet = [
+		'deb',
+		source,
+		suite,
+		components.join(' ')
+	];
+
+	fs.writeFile(path.join(self.targetPath, 'etc', 'apt', 'sources.list.d', name + '.list'), sourceSet.join(' ') + '\n', function(err) {
+		callback(err);
+	});
+};
+
+Rootfs.prototype.clearRepositories = function(callback) {
+	var self = this;
+
+	var repoPath = path.join(self.targetPath, 'etc', 'apt', 'sources.list.d');
+
+	fs.readdir(repoPath, function(err, files) {
+
+		async.each(files, function(filename, cb) {
+			fs.unlink(path.join(repoPath, filename), cb);
+		}, function() {
+			callback();
+		});
+	});
+};
+
+Rootfs.prototype.removeRepository = function(name, callback) {
+	var self = this;
+
+	fs.unlink(path.join(self.targetPath, 'etc', 'apt', 'sources.list.d', name + '.list'), function() {
+		callback();
+	});
+};
+
 Rootfs.prototype.applyOverwrite = function(sourcePath, callback) {
 	var self = this;
 
@@ -272,6 +310,19 @@ Rootfs.prototype.prepareEnvironment = function(callback) {
 				function(_next) {
 
 					fs.mkdir(path.join(stemmerPath, 'packages'), function(err) {
+						if (err) {
+							_next(err);
+							return;
+						}
+
+						_next();
+
+					});
+				},
+				function(_next) {
+
+					// Generate package list for local repository
+					self.applyPackages({}, function(err) {
 						if (err) {
 							_next(err);
 							return;
@@ -424,7 +475,12 @@ Rootfs.prototype.setPackageIndexes = function(indexPath, callback) {
 			var cmd = child_process.spawn('cp', args);
 			cmd.on('close', function() {
 
-				callback(null);
+				// Update package index
+				var rootfsExecuter = new RootfsExecuter(self);
+				rootfsExecuter.addCommand('apt-get update');
+				rootfsExecuter.run({}, function() {
+					callback(null);
+				});
 			});
 		})
 	});
@@ -453,13 +509,15 @@ Rootfs.prototype.fetchPackageIndexes = function(outputPath, callback) {
 
 		// Finding index files
 		async.each(files, function(filename, next) {
+			if (/_Packages$/.test(filename) ||
+				/_Translation-en$/.test(filename) ||
+				/_InRelease$/.test(filename) ||
+				/_Sources$/.test(filename) ||
+				/_Release$/.test(filename)) {
 
-			if (filename.lastIndexOf('_Packages') > 0 ||
-				filename.lastIndexOf('_Translation-en') > 0 ||
-				filename.lastIndexOf('_InRelease') > 0 ||
-				filename.lastIndexOf('_Release') > 0) {
-
-				filelist.push(path.join(sourceDirPath, filename));
+				// Ignore stemmer local repos
+				if (filename != '_.stemmer_packages_._Packages')
+					filelist.push(path.join(sourceDirPath, filename));
 			}
 
 			next();
@@ -520,8 +578,12 @@ Rootfs.prototype.installPackages = function(packages, opts, callback) {
 
 	var rootfsExecuter = new RootfsExecuter(self);
 
-	rootfsExecuter.addCommand('apt-get update');
-	rootfsExecuter.addCommand('apt-get install -f --no-install-recommends -q --force-yes -y ' + pkgs.join(' '))
+	// Specify suite
+	if (opts.suite)
+		rootfsExecuter.addCommand('apt-get install -f --no-install-recommends -q --force-yes -y -t ' + opts.suite + ' ' + pkgs.join(' '));
+	else
+		rootfsExecuter.addCommand('apt-get install -f --no-install-recommends -q --force-yes -y ' + pkgs.join(' '));
+
 	rootfsExecuter.run({}, function() {
 		callback(null);
 	});
@@ -568,4 +630,45 @@ Rootfs.prototype.applyPackages = function(opts, callback) {
 			callback();
 	});
 
+};
+
+Rootfs.prototype.addUsers = function(users, opts, callback) {
+	var self = this;
+
+	if (Object.keys(users).length == 0) {
+		process.nextTick(function() {
+			callback(null);
+		});
+		return;
+	}
+
+	var rootfsExecuter = new RootfsExecuter(self);
+
+	for (var username in users) {
+
+		if (username != 'root')
+			rootfsExecuter.addCommand('useradd -m ' + username);
+		else {
+			// Reset root password
+			rootfsExecuter.addCommand('passwd -d ' + username);
+		}
+
+		if (users[username].password) {
+			if (users[username].password != '') {
+				rootfsExecuter.addCommand('echo -e \"' + users[username].password + '\n' + users[username].password + '\" | passwd ' + username);
+				continue;
+			}
+		}
+
+		// No need to reset again for root
+		if (username == 'root')
+			continue;
+
+		// Do not set password
+		rootfsExecuter.addCommand('passwd -d ' + username);
+	}
+
+	rootfsExecuter.run({}, function() {
+		callback(null);
+	});
 };

@@ -13,7 +13,7 @@ Install dependencies via apt-get on Debian:
 Install Node.js modules via NPM:
 
 	cd bin
-	npm install async node-uuid
+	npm install async node-uuid colors
 
 Usage
 -

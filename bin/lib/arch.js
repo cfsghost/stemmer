@@ -23,13 +23,13 @@ var Arch = module.exports = function() {
 	self.platform = null;
 	self.refPlatform = null;
 	self.settings = {};
+	self.repos = [];
 };
 
 util.inherits(Arch, events.EventEmitter);
 
 Arch.prototype.init = function(callback) {
 	var self = this;
-
 
 	self.loadConfig(path.join(self.archPath, self.platform || self.arch, 'config.json'), function(err) {
 		if (err) {
@@ -61,6 +61,28 @@ Arch.prototype.loadConfig = function(filename, callback) {
 
 		self.settings = JSON.parse(data);
 
+		// Preparing all repo information
+		if (self.settings.repo) {
+
+			self.repos = [];
+			for (var repoName in self.settings.repo) {
+
+				if (repoName == 'General')
+					continue;
+
+				var repo = self.settings.repo[repoName];
+				var repoInfo = {};
+				repoInfo.name = repoName.toLowerCase();
+				repoInfo.source = repo.source;
+				repoInfo.suite = repo.suite || 'sid';
+				repoInfo.components = repo.components ? repo.components.split(' ') : [ 'main' ];
+				repoInfo.keyring = repo.keyring || '';
+				repoInfo.packages = repo.packages || [];
+
+				self.repos.push(repoInfo);
+			}
+		}
+
 		// This architecture depends on another one
 		if (self.settings.platform) {
 
@@ -88,37 +110,6 @@ Arch.prototype.loadConfig = function(filename, callback) {
 	});
 };
 
-Arch.prototype.getPackages = function(callback) {
-	var self = this;
-
-	if (!self.settings.repo) {
-		process.nextTick(function() {
-			callback([]);
-		});
-
-		return;
-	}
-
-	var packages = [];
-	for (var repoName in self.settings.repo) {
-
-		if (repoName == 'General')
-			continue;
-
-		var repo = self.settings.repo[repoName];
-
-		if (!repo.packages)
-			continue;
-
-		packages = packages.concat(repo.packages);
-	}
-
-	process.nextTick(function() {
-		callback(packages);
-	});
-
-};
-
 Arch.prototype.buildExists = function(callback) {
 	var self = this;
 
@@ -143,7 +134,6 @@ Arch.prototype.getRootfs = function(opts, callback) {
 			rootfs.targetPath = archBuildPath;
 
 			callback(null, rootfs);
-
 			return;
 		}
 
@@ -187,6 +177,12 @@ Arch.prototype.makeRootfs = function(callback) {
 
 				// Based on referenced platform
 				self.refPlatform.getRootfs({ makeIfDoesNotExists: true }, function(err, refRootfs) {
+					if (err) {
+						next(err);
+						return;
+					}
+
+					self.emit('make', 'reference_rootfs');
 
 					// Clone from job directory to another place for storing
 					refRootfs.clone(targetPath, function(err, rootfs) {
@@ -221,12 +217,38 @@ Arch.prototype.makeRootfs = function(callback) {
 			strap.settings.General.arch = self.arch;
 			strap.generateBuildConfig(configPath, function() {
 
+				self.emit('make', 'new_rootfs');
+
 				// Starting to make a rootfs
 				strap.build(configPath, targetPath, function(err, rootfs) {
+
 					archRootfs = rootfs;
 
-					next();
+					// Clear all repositories which are used by multistrap
+					rootfs.clearRepositories(function() {
+						next();
+					});
+
 				});
+			});
+		},
+		function(next) {
+
+			if (!self.settings.repo) {
+				next();
+				return;
+			}
+
+			self.emit('make', 'init_repos');
+
+			// Initializing repositories
+			async.eachSeries(self.repos, function(repo, cb) {
+
+				archRootfs.addRepository(repo.name, repo.source, repo.suite, repo.components, repo.keyring, function() {
+					cb();
+				});
+			}, function() {
+				next();
 			});
 		},
 		function(next) {
@@ -242,8 +264,9 @@ Arch.prototype.makeRootfs = function(callback) {
 			var activator = new RootfsActivator(archRootfs);
 			activator.configurePackages = true;
 			activator.resetRootPassword = true;
-			activator.activate(function() {
-				next();
+			activator.activate(function(err) {
+
+				next(err);
 			});
 		},
 		function(next) {
@@ -273,6 +296,11 @@ Arch.prototype.makeRootfs = function(callback) {
 
 				next();
 			});
+		},
+		function(next) {
+
+			// Remove emdebian repository to avoid breaking dependencies
+			archRootfs.removeRepository('grip', next);
 		},
 		function(next) {
 
@@ -335,23 +363,23 @@ Arch.prototype.initRootfs = function(rootfs, callback) {
 
 			self.emit('configure', 'install_packages');
 
-			// Installing packages
-			self.getPackages(function(packages) {
-				if (packages.length == 0) {
-					next();
-					return;
-				}
+			async.eachSeries(self.repos, function(repo, cb) {
 
 				// Preparing package list
 				var pkgs = {};
-				for (var index in packages) {
+				for (var index in repo.packages) {
+
 					// No specific version
-					pkgs[packages[index]] = '*';
+					pkgs[repo.packages[index]] = '*';
 				}
 
-				rootfs.installPackages(pkgs, {}, function() {
-					next();
+				// Installing packages
+				rootfs.installPackages(pkgs, { suite: repo.suite }, function() {
+					cb();
 				});
+				
+			}, function() {
+				next();
 			});
 		},
 		function(next) {
@@ -383,7 +411,12 @@ Arch.prototype.initRootfs = function(rootfs, callback) {
 		// Clear rootfs
 		rootfs.clearEnvironment(function() {
 
-			self.emit('configure', 'complete');
+			if (err) {
+				self.emit('configure', 'fail');
+			} else {
+				self.emit('configure', 'complete');
+			}
+
 			callback(err);
 		});
 

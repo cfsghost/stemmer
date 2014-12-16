@@ -10,7 +10,10 @@
 			"aptsources": [ "Debian" ]
 		},
 		"Debian": {
-			"source": "http://ftp.us.debian.org/debian",
+			"packages": [
+				"apt"
+			],
+			"source": "http://ftp.tw.debian.org/debian",
 			"keyring": "debian-archive-keyring",
 			"components": "main contrib non-free",
 			"suite": "sid"

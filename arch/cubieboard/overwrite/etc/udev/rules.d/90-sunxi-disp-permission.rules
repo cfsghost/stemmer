@@ -1,0 +1,2 @@
+KERNEL=="disp", MODE="0777", GROUP="video"
+KERNEL=="cedar_dev", MODE="0777", GROUP="video"

@@ -2,6 +2,16 @@
 
 var net = require('net');
 
+if (process.argv[2] == '--nodaemon') {
+
+	var StemDaemon = require('../lib/stemd');
+	var stemDaemon = new StemDaemon();
+	stemDaemon.init(function(err) {
+	});
+	
+	return;
+}
+
 var socketPath = '/tmp/stemd.socket';
 
 if (process.argv[2] == '--daemon') {

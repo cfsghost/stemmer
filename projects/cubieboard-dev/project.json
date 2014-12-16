@@ -1,0 +1,21 @@
+{
+	"name": "cubieboard-dev",
+	"description": "Base system",
+	"platform": "cubieboard-stemos",
+	"settings": {
+		"hostname": "StemOS"
+	},
+	"network": {
+		"connections": {
+			"default": {
+				"inet": "eth0",
+				"method": "dhcp"
+			}
+		}
+	},
+	"users": {
+		"fred": {
+			"password": ""
+		}
+	}
+}

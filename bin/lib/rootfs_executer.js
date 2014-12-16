@@ -32,6 +32,15 @@ RootfsExecuter.prototype.addCommand = function(command) {
 RootfsExecuter.prototype.run = function(opts, callback) {
 	var self = this;
 
+	// No command needed to be executed
+	if (self.commands.length == 0) {
+		setImmediate(function() {
+			callback();
+		});
+
+		return;
+	}
+
 	var scriptPath = path.join(self.rootfs.targetPath, 'rootfs_executer.sh');
 
 	async.series([
@@ -41,6 +50,10 @@ RootfsExecuter.prototype.run = function(opts, callback) {
 
 			// Create script for activating
 			fs.writeFile(scriptPath, script.join('\n'), function(err) {
+				if (err) {
+					next(err);
+					return;
+				}
 
 				fs.chmod(scriptPath, '755', function() {
 					next();
@@ -65,7 +78,7 @@ RootfsExecuter.prototype.run = function(opts, callback) {
 				});
 			});
 		}
-	], function() {
-		callback();
+	], function(err) {
+		callback(err);
 	});
 };

@@ -119,6 +119,7 @@ Project.prototype.build = function(opts, callback) {
 	var packages = {};
 	var recipes = {};
 	var indexPath = null;
+	var stemConfigDir = null;
 	async.series([
 		function(next) {
 
@@ -137,10 +138,12 @@ Project.prototype.build = function(opts, callback) {
 			// This architecture depends on another one
 			if (self.refPlatform) {
 
-				self.emit('build', 'make_platform');
+				self.emit('build', 'make_platform', 'selected_reference', self.refPlatform);
 
 				// Based on referenced platform
 				self.refPlatform.getRootfs({ makeIfDoesNotExists: true }, function(err, refRootfs) {
+
+					self.emit('build', 'make_platform', 'clone_reference');
 
 					// Clone
 					refRootfs.clone(targetPath, function(err, rootfs) {
@@ -149,11 +152,40 @@ Project.prototype.build = function(opts, callback) {
 							return;
 						}
 
+						self.emit('build', 'make_platform', 'complete');
+
 						curRootfs = rootfs;
 
 						next();
 					});
 				});
+
+				self.refPlatform.on('make', function() {
+					var args = [
+						'build',
+						'make_platform',
+						'get_reference',
+						self.refPlatform,
+						'make'
+					];
+
+					var newArgs = args.concat(Array.prototype.slice.call(arguments));
+					self.emit.apply(self, newArgs);
+				});
+
+				self.refPlatform.on('configure', function() {
+					var args = [
+						'build',
+						'make_platform',
+						'get_reference',
+						self.refPlatform,
+						'configure'
+					];
+
+					var newArgs = args.concat(Array.prototype.slice.call(arguments));
+					self.emit.apply(self, newArgs);
+				});
+
 				return;
 			}
 
@@ -170,6 +202,13 @@ Project.prototype.build = function(opts, callback) {
 			self.emit('build', 'preparing');
 
 			curRootfs.prepareEnvironment(next);
+
+		},
+		function(next) {
+
+			// Prepare configuration directory
+			stemConfigDir = path.join(curRootfs.targetPath, 'etc', 'Stem');
+			fs.mkdir(stemConfigDir, next);
 		},
 		function(next) {
 
@@ -204,6 +243,11 @@ Project.prototype.build = function(opts, callback) {
 		},
 		function(next) {
 
+			if (!self.settings.settings) {
+				next();
+				return;
+			}
+
 			if (!self.settings.settings.hostname) {
 				next();
 				return;
@@ -212,6 +256,21 @@ Project.prototype.build = function(opts, callback) {
 			// Write to hostname configuration file
 			fs.writeFile(path.join(curRootfs.targetPath, 'etc', 'hostname'), self.settings.settings.hostname, function(err) {
 				next(err);
+			});
+		},
+		function(next) {
+
+			if (!self.settings.network) {
+				next();
+				return;
+			}
+
+			// Setting connections
+			var networkConfigPath = path.join(stemConfigDir, 'network.json');
+
+			// Writing to configuration file
+			fs.writeFile(networkConfigPath, JSON.stringify(self.settings.network), function(err) {
+				next();
 			});
 		},
 		function(next) {
@@ -329,18 +388,30 @@ Project.prototype.build = function(opts, callback) {
 		},
 		function(next) {
 
+			if (!self.settings.users) {
+				next();
+				return;
+			}
+
+			if (Object.keys(self.settings.users).length == 0) {
+				next();
+				return;
+			}
+
+			// Add users
+			self.emit('build', 'create_users');
+			curRootfs.addUsers(self.settings.users, {}, function() {
+				next();
+			});
+		},
+		function(next) {
+
 			self.emit('build', 'make_cache');
 
 			// Cache package indexes
 			curRootfs.fetchPackageIndexes(indexPath, function() {
 				next();
 			});
-		},
-		function(next) {
-
-			self.emit('build', 'clear');
-
-			curRootfs.clearEnvironment(next);
 		},
 		function(next) {
 
@@ -361,6 +432,12 @@ Project.prototype.build = function(opts, callback) {
 			
 			// register services
 			curRootfs.registerServices(self.settings.services, {}, next);
+		},
+		function(next) {
+
+			self.emit('build', 'clear');
+
+			curRootfs.clearEnvironment(next);
 		},
 		function(next) {
 
