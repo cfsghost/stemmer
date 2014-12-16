@@ -1,0 +1,27 @@
+{
+  "name": "stemmer",
+  "version": "0.0.1",
+  "description": "StemOS Build System",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://cfsghost@github.com/cfsghost/stemmer.git"
+  },
+  "keywords": [
+    "stemos",
+    "build"
+  ],
+  "author": "Fred Chien <cfsghost@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/cfsghost/stemmer/issues"
+  },
+  "dependencies": {
+    "node-uuid": "~1.4.2",
+    "async": "~0.9.0",
+    "colors": "~1.0.3"
+  }
+}
