@@ -46,6 +46,22 @@ RootfsExecuter.prototype.run = function(opts, callback) {
 	async.series([
 		function(next) {
 
+			// Mount dev path
+			var cmd = child_process.spawn('mount', [
+				'--bind',
+				'/dev',
+				path.join(self.rootfs.targetPath, 'dev')
+			]);
+
+			cmd.stdout.pipe(process.stdout);
+			cmd.stderr.pipe(process.stderr);
+
+			cmd.on('close', function() {
+				next();
+			});
+		},
+		function(next) {
+
 			var script = self.preloads.concat(self.commands, self.postloads);
 
 			// Create script for activating
@@ -79,6 +95,18 @@ RootfsExecuter.prototype.run = function(opts, callback) {
 			});
 		}
 	], function(err) {
-		callback(err);
+
+		// Unmount dev path
+		var cmd = child_process.spawn('umount', [
+			'-l',
+			path.join(self.rootfs.targetPath, 'dev')
+		]);
+
+		cmd.stdout.pipe(process.stdout);
+		cmd.stderr.pipe(process.stderr);
+
+		cmd.on('close', function() {
+			callback(err);
+		});
 	});
 };
