@@ -1,7 +1,7 @@
 "use strict";
 
 if (process.argv.length < 3) {
-	console.log('usage: mkrootfs [Project Name]');
+	console.log('usage: mkrootfs [Platform]');
 	process.exit();
 }
 
