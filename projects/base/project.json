@@ -2,6 +2,9 @@
 	"name": "base",
 	"description": "Base system",
 	"platform": "cubieboard-stemos",
+	"settings": {
+		"hostname": "StemOS"
+	},
 	"network": {
 		"eth0": {
 			"method": "dhcp"
