@@ -448,6 +448,14 @@ Rootfs.prototype.setPackageIndexes = function(indexPath, callback) {
 
 	var outputPath = path.join(self.targetPath, 'var', 'lib', 'apt', 'lists');
 
+	function updatePackage() {
+		var rootfsExecuter = new RootfsExecuter(self);
+		rootfsExecuter.addCommand('apt-get update');
+		rootfsExecuter.run({}, function() {
+			callback(null);
+		});
+	}
+
 	fs.readdir(indexPath, function(err, files) {
 		if (err) {
 			callback(err);
@@ -455,7 +463,8 @@ Rootfs.prototype.setPackageIndexes = function(indexPath, callback) {
 		}
 
 		if (files.length == 0) {
-			callback();
+			// Update package index
+			updatePackage();
 			return;
 		}
 
@@ -476,11 +485,7 @@ Rootfs.prototype.setPackageIndexes = function(indexPath, callback) {
 			cmd.on('close', function() {
 
 				// Update package index
-				var rootfsExecuter = new RootfsExecuter(self);
-				rootfsExecuter.addCommand('apt-get update');
-				rootfsExecuter.run({}, function() {
-					callback(null);
-				});
+				updatePackage();
 			});
 		})
 	});
