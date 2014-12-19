@@ -18,6 +18,7 @@ var RootfsActivator = module.exports = function(rootfs) {
 	// Settings
 	self.configurePackages = false;
 	self.resetRootPassword = false;
+	self.setupDefaultSystemd = false;
 };
 
 util.inherits(RootfsActivator, events.EventEmitter);
@@ -34,6 +35,14 @@ RootfsActivator.prototype.setRootPasswordCleaner = function(callback) {
 	var self = this;
 
 	self.rootfsExecuter.addCommand('passwd -d root');
+
+	process.nextTick(callback);
+};
+
+RootfsActivator.prototype.setDefaultSystemd = function(callback) {
+	var self = this;
+
+	self.rootfsExecuter.addCommand('systemctl isolate multi-user.target');
 
 	process.nextTick(callback);
 };
@@ -76,6 +85,16 @@ RootfsActivator.prototype.activate = function(callback) {
 			}
 
 			self.setRootPasswordCleaner(function() {
+				next();
+			});
+		},
+		function(next) {
+			if (!self.setupDefaultSystemd) {
+				next();
+				return;
+			}
+
+			self.setDefaultSystemd(function() {
 				next();
 			});
 		},

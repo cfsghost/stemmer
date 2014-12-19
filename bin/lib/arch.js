@@ -264,6 +264,7 @@ Arch.prototype.makeRootfs = function(callback) {
 			var activator = new RootfsActivator(archRootfs);
 			activator.configurePackages = true;
 			activator.resetRootPassword = true;
+			activator.setupDefaultSystemd = true;
 			activator.activate(function(err) {
 
 				next(err);
